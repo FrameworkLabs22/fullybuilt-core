@@ -1,0 +1,6 @@
+node_modules
+*.log
+.DS_Store
+.vite
+# NOTE: dist/ is intentionally committed — consumers install this as a git
+# dependency and use the prebuilt output directly (no build step on install).
