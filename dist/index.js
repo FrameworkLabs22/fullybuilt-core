@@ -13,7 +13,20 @@ import * as SheetPrimitive from '@radix-ui/react-dialog';
 import { cva } from 'class-variance-authority';
 
 // src/warm/theme.ts
-var WARM = {
+var _varCache = {};
+function readVar(name, fallback) {
+  if (typeof document === "undefined") return fallback;
+  const cached = _varCache[name];
+  if (cached) return cached;
+  const val = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  if (val) {
+    _varCache[name] = val;
+    return val;
+  }
+  return fallback;
+}
+var BASE = {
+  // ── neutrals (shared across all clients) ──
   bg: "#F7F8FA",
   card: "#FFFFFF",
   ink: "#1C1E24",
@@ -23,27 +36,46 @@ var WARM = {
   borderStrong: "#D8DBE1",
   chip: "#EEF0F3",
   track: "#ECEEF2",
+  // ── per-client brand/accent (resolve from CSS vars; see BRAND_VARS) ──
   primary: "#0E0E06",
   primarySoft: "#F6F6AE",
   pos: "#2B9E8F",
   posSoft: "#E4F4F1",
   blue: "#29C0DD",
-  // cyan — chart line/stroke accent (legible on white)
+  // chart line/stroke accent
   blueSoft: "#FCFAD0",
-  // yellow tint — area fills
+  // area fills
   blueMid: "#F6F949",
-  // acid yellow — standalone bars/funnel
-  // KPI % badges (AA-safe; brighter than WARM.pos teal). UI badges only, not chart series.
+  // standalone bars/funnel
+  cream: "#F4F5F6",
+  navy: "#0E0E06",
+  // ── KPI % badges (AA-safe semantic green/red; shared, not chart series) ──
   badgePos: "#15803D",
   badgePosBg: "#DCFCE7",
   badgeNeg: "#B42318",
   badgeNegBg: "#FCE7E6",
   warn: "#C77A1E",
   warnSoft: "#FBF1E2",
-  danger: "#d94a36",
-  cream: "#F4F5F6",
-  navy: "#0E0E06"
+  danger: "#d94a36"
 };
+var BRAND_VARS = {
+  primary: "--warm-primary",
+  primarySoft: "--warm-primary-soft",
+  pos: "--warm-pos",
+  posSoft: "--warm-pos-soft",
+  blue: "--warm-chart-line",
+  blueSoft: "--warm-chart-fill",
+  blueMid: "--warm-chart-bar",
+  cream: "--warm-cream",
+  navy: "--warm-navy"
+};
+var WARM = new Proxy(BASE, {
+  get(target, prop) {
+    const varName = BRAND_VARS[prop];
+    if (varName) return readVar(varName, target[prop]);
+    return target[prop];
+  }
+});
 var axisTick = { fontSize: 11, fill: WARM.sub };
 var chartTip = {
   contentStyle: {
@@ -52,22 +84,20 @@ var chartTip = {
     border: `1px solid ${WARM.border}`,
     background: "#fff"
   },
-  // Hover highlight behind the active bar — a light grey instead of Recharts'
-  // dark default. (Only affects bar charts; line/area cursors use a stroke.)
   cursor: { fill: WARM.chip, fillOpacity: 0.6 }
 };
-var CHART_SERIES = [
-  WARM.primary,
-  // navy
-  WARM.blue,
-  // light blue
-  WARM.warn,
+var SERIES_FALLBACK = [
+  "#0E0E06",
+  // primary
+  "#29C0DD",
+  // chart accent
+  "#C77A1E",
   // amber
   "#cfdd28",
   // lime
   "#8E9DAC",
   // slate gray
-  WARM.pos,
+  "#2B9E8F",
   // teal
   "#3E5871",
   // slate navy
@@ -82,6 +112,15 @@ var CHART_SERIES = [
   "#B87A1C"
   // dark amber
 ];
+var CHART_SERIES = new Proxy(SERIES_FALLBACK, {
+  get(target, prop) {
+    if (typeof prop === "string" && /^\d+$/.test(prop)) {
+      const i = Number(prop);
+      return readVar(`--warm-series-${i + 1}`, target[i]);
+    }
+    return target[prop];
+  }
+});
 var seriesColor = (i) => CHART_SERIES[i % CHART_SERIES.length];
 var GRID = {
   strokeDasharray: "3 3",
@@ -101,9 +140,9 @@ function cn(...inputs) {
 }
 
 // src/warm/press.ts
-var BASE = "transition-[transform,color,background-color,border-color,box-shadow] duration-150 ease-[cubic-bezier(0.25,1,0.5,1)] motion-reduce:transition-none motion-reduce:active:scale-100";
-var pressable = `${BASE} active:scale-[0.97]`;
-var pressableSoft = `${BASE} active:scale-[0.985]`;
+var BASE2 = "transition-[transform,color,background-color,border-color,box-shadow] duration-150 ease-[cubic-bezier(0.25,1,0.5,1)] motion-reduce:transition-none motion-reduce:active:scale-100";
+var pressable = `${BASE2} active:scale-[0.97]`;
+var pressableSoft = `${BASE2} active:scale-[0.985]`;
 var ELEVATION = {
   card: "shadow-card",
   raised: "shadow-raised",

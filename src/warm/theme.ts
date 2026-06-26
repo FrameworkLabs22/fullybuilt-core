@@ -1,11 +1,39 @@
 /**
- * Warm Editorial (Direction A) — literal palette + Recharts styling helpers.
+ * Warm Editorial (Direction A) — palette + Recharts styling helpers.
  *
- * Mirrors the `--warm-*` CSS variables in index.css. Components style color via
- * Tailwind `warm-*` classes; this object exists for the places that need literal
- * values — chiefly Recharts series/strokes, which take SVG color props.
+ * NEUTRALS (bg/card/ink/borders/badges/warn/danger) are shared across every
+ * client and stay as literals here.
+ *
+ * BRAND/CHART colors are per-client. They resolve at runtime from `--warm-*` CSS
+ * variables (defined in each app's index.css) so the shared package carries no
+ * client's palette — each dashboard keeps its own brand. The literals below are
+ * FALLBACKS (the original Untoxicated values) used when a var isn't defined, so a
+ * client that hasn't declared the vars still renders sensibly.
+ *
+ * Why runtime resolution (not `var(...)` strings): Recharts passes colors as SVG
+ * presentation attributes, where `var()` does not resolve. Reading the computed
+ * value yields a literal hex that works everywhere.
  */
-export const WARM = {
+
+// Resolve a CSS custom property to a literal value, memoized. Falls back until the
+// stylesheet is applied (we don't cache empties, so it retries until vars exist).
+const _varCache: Record<string, string> = {};
+function readVar(name: string, fallback: string): string {
+  if (typeof document === "undefined") return fallback;
+  const cached = _varCache[name];
+  if (cached) return cached;
+  const val = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  if (val) {
+    _varCache[name] = val;
+    return val;
+  }
+  return fallback;
+}
+
+// Full palette with Untoxicated fallbacks. Neutrals are the shared system; the
+// keys listed in BRAND_VARS below are overridable per client via CSS vars.
+const BASE = {
+  // ── neutrals (shared across all clients) ──
   bg: "#F7F8FA",
   card: "#FFFFFF",
   ink: "#1C1E24",
@@ -15,14 +43,17 @@ export const WARM = {
   borderStrong: "#D8DBE1",
   chip: "#EEF0F3",
   track: "#ECEEF2",
+  // ── per-client brand/accent (resolve from CSS vars; see BRAND_VARS) ──
   primary: "#0E0E06",
   primarySoft: "#F6F6AE",
   pos: "#2B9E8F",
   posSoft: "#E4F4F1",
-  blue: "#29C0DD",      // cyan — chart line/stroke accent (legible on white)
-  blueSoft: "#FCFAD0",  // yellow tint — area fills
-  blueMid: "#F6F949",   // acid yellow — standalone bars/funnel
-  // KPI % badges (AA-safe; brighter than WARM.pos teal). UI badges only, not chart series.
+  blue: "#29C0DD",      // chart line/stroke accent
+  blueSoft: "#FCFAD0",  // area fills
+  blueMid: "#F6F949",   // standalone bars/funnel
+  cream: "#F4F5F6",
+  navy: "#0E0E06",
+  // ── KPI % badges (AA-safe semantic green/red; shared, not chart series) ──
   badgePos: "#15803D",
   badgePosBg: "#DCFCE7",
   badgeNeg: "#B42318",
@@ -30,11 +61,34 @@ export const WARM = {
   warn: "#C77A1E",
   warnSoft: "#FBF1E2",
   danger: "#d94a36",
-  cream: "#F4F5F6",
-  navy: "#0E0E06",
 } as const;
 
-/** Recharts axis tick style. (WARM.sub, not WARM.faint, to clear WCAG AA contrast on the light bg.) */
+// Per-client keys → the CSS variable each resolves from. Keys NOT listed stay literal.
+const BRAND_VARS: Partial<Record<keyof typeof BASE, string>> = {
+  primary: "--warm-primary",
+  primarySoft: "--warm-primary-soft",
+  pos: "--warm-pos",
+  posSoft: "--warm-pos-soft",
+  blue: "--warm-chart-line",
+  blueSoft: "--warm-chart-fill",
+  blueMid: "--warm-chart-bar",
+  cream: "--warm-cream",
+  navy: "--warm-navy",
+};
+
+/**
+ * Warm palette. Neutral keys are literal; brand keys resolve per-client from CSS
+ * vars at access time (so reads during render pick up the host app's index.css).
+ */
+export const WARM = new Proxy(BASE as Record<string, string>, {
+  get(target, prop: string) {
+    const varName = BRAND_VARS[prop as keyof typeof BASE];
+    if (varName) return readVar(varName, target[prop]);
+    return target[prop];
+  },
+}) as { -readonly [K in keyof typeof BASE]: string };
+
+/** Recharts axis tick style. (WARM.sub clears WCAG AA contrast on the light bg.) */
 export const axisTick = { fontSize: 11, fill: WARM.sub } as const;
 
 /** Recharts <Tooltip> props for a soft warm container. */
@@ -45,33 +99,39 @@ export const chartTip = {
     border: `1px solid ${WARM.border}`,
     background: "#fff",
   },
-  // Hover highlight behind the active bar — a light grey instead of Recharts'
-  // dark default. (Only affects bar charts; line/area cursors use a stroke.)
   cursor: { fill: WARM.chip, fillOpacity: 0.6 },
 } as const;
 
 /**
  * Brand-led categorical palette for multi-series charts (fees mix, AI charts).
- * Built from the Sidekick palette plus muted slate/tint extensions — no
- * off-brand blues/violets/pinks.
+ * Per-client: resolves from `--warm-series-1..12` with the original Untoxicated
+ * palette as fallback. Consumed as an array (indexing / .map) — the Proxy resolves
+ * each index lazily so charts pick up the host app's series colors.
  */
-// Ordered so the first six hues are maximally distinct (and hold up for color-blind
-// viewers) before any blues cluster — most charts use ≤3 series, so the common case
-// never collides. Positions 0/1 stay navy + light-blue (the 2-series default).
-export const CHART_SERIES = [
-  WARM.primary, // navy
-  WARM.blue,    // light blue
-  WARM.warn,    // amber
-  "#cfdd28",    // lime
-  "#8E9DAC",    // slate gray
-  WARM.pos,     // teal
-  "#3E5871",    // slate navy
-  "#5C7AA8",    // steel blue
-  "#4C6FA0",    // deep blue
-  "#A9C2DD",    // light steel blue
-  "#B8CDE5",    // soft blue tint
-  "#B87A1C",    // dark amber
+const SERIES_FALLBACK = [
+  "#0E0E06", // primary
+  "#29C0DD", // chart accent
+  "#C77A1E", // amber
+  "#cfdd28", // lime
+  "#8E9DAC", // slate gray
+  "#2B9E8F", // teal
+  "#3E5871", // slate navy
+  "#5C7AA8", // steel blue
+  "#4C6FA0", // deep blue
+  "#A9C2DD", // light steel blue
+  "#B8CDE5", // soft blue tint
+  "#B87A1C", // dark amber
 ] as const;
+
+export const CHART_SERIES = new Proxy(SERIES_FALLBACK as unknown as string[], {
+  get(target, prop: string) {
+    if (typeof prop === "string" && /^\d+$/.test(prop)) {
+      const i = Number(prop);
+      return readVar(`--warm-series-${i + 1}`, target[i]);
+    }
+    return (target as any)[prop];
+  },
+}) as unknown as readonly string[];
 
 /** Pick a series color by index (cycles through the palette). */
 export const seriesColor = (i: number) => CHART_SERIES[i % CHART_SERIES.length];

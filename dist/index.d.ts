@@ -4,13 +4,22 @@ import { XAxis, YAxis, LabelList, ReferenceLine } from 'recharts';
 import * as TabsPrimitive from '@radix-ui/react-tabs';
 
 /**
- * Warm Editorial (Direction A) — literal palette + Recharts styling helpers.
+ * Warm Editorial (Direction A) — palette + Recharts styling helpers.
  *
- * Mirrors the `--warm-*` CSS variables in index.css. Components style color via
- * Tailwind `warm-*` classes; this object exists for the places that need literal
- * values — chiefly Recharts series/strokes, which take SVG color props.
+ * NEUTRALS (bg/card/ink/borders/badges/warn/danger) are shared across every
+ * client and stay as literals here.
+ *
+ * BRAND/CHART colors are per-client. They resolve at runtime from `--warm-*` CSS
+ * variables (defined in each app's index.css) so the shared package carries no
+ * client's palette — each dashboard keeps its own brand. The literals below are
+ * FALLBACKS (the original Untoxicated values) used when a var isn't defined, so a
+ * client that hasn't declared the vars still renders sensibly.
+ *
+ * Why runtime resolution (not `var(...)` strings): Recharts passes colors as SVG
+ * presentation attributes, where `var()` does not resolve. Reading the computed
+ * value yields a literal hex that works everywhere.
  */
-declare const WARM: {
+declare const BASE: {
     readonly bg: "#F7F8FA";
     readonly card: "#FFFFFF";
     readonly ink: "#1C1E24";
@@ -27,6 +36,8 @@ declare const WARM: {
     readonly blue: "#29C0DD";
     readonly blueSoft: "#FCFAD0";
     readonly blueMid: "#F6F949";
+    readonly cream: "#F4F5F6";
+    readonly navy: "#0E0E06";
     readonly badgePos: "#15803D";
     readonly badgePosBg: "#DCFCE7";
     readonly badgeNeg: "#B42318";
@@ -34,49 +45,47 @@ declare const WARM: {
     readonly warn: "#C77A1E";
     readonly warnSoft: "#FBF1E2";
     readonly danger: "#d94a36";
-    readonly cream: "#F4F5F6";
-    readonly navy: "#0E0E06";
 };
-/** Recharts axis tick style. (WARM.sub, not WARM.faint, to clear WCAG AA contrast on the light bg.) */
+/**
+ * Warm palette. Neutral keys are literal; brand keys resolve per-client from CSS
+ * vars at access time (so reads during render pick up the host app's index.css).
+ */
+declare const WARM: { -readonly [K in keyof typeof BASE]: string; };
+/** Recharts axis tick style. (WARM.sub clears WCAG AA contrast on the light bg.) */
 declare const axisTick: {
     readonly fontSize: 11;
-    readonly fill: "#6E727B";
+    readonly fill: string;
 };
 /** Recharts <Tooltip> props for a soft warm container. */
 declare const chartTip: {
     readonly contentStyle: {
         readonly fontSize: 12;
         readonly borderRadius: 10;
-        readonly border: "1px solid #E7E9EE";
+        readonly border: `1px solid ${string}`;
         readonly background: "#fff";
     };
     readonly cursor: {
-        readonly fill: "#EEF0F3";
+        readonly fill: string;
         readonly fillOpacity: 0.6;
     };
 };
-/**
- * Brand-led categorical palette for multi-series charts (fees mix, AI charts).
- * Built from the Sidekick palette plus muted slate/tint extensions — no
- * off-brand blues/violets/pinks.
- */
-declare const CHART_SERIES: readonly ["#0E0E06", "#29C0DD", "#C77A1E", "#cfdd28", "#8E9DAC", "#2B9E8F", "#3E5871", "#5C7AA8", "#4C6FA0", "#A9C2DD", "#B8CDE5", "#B87A1C"];
+declare const CHART_SERIES: readonly string[];
 /** Pick a series color by index (cycles through the palette). */
-declare const seriesColor: (i: number) => "#0E0E06" | "#2B9E8F" | "#29C0DD" | "#C77A1E" | "#cfdd28" | "#8E9DAC" | "#3E5871" | "#5C7AA8" | "#4C6FA0" | "#A9C2DD" | "#B8CDE5" | "#B87A1C";
+declare const seriesColor: (i: number) => string;
 /** Faint dashed grid. Spread onto <CartesianGrid {...GRID} />. */
 declare const GRID: {
     readonly strokeDasharray: "3 3";
-    readonly stroke: "#ECEEF2";
+    readonly stroke: string;
 };
 /** UPPER_CASE aliases so charts can use one import style everywhere. */
 declare const AXIS_TICK: {
     readonly fontSize: 11;
-    readonly fill: "#6E727B";
+    readonly fill: string;
 };
 declare const TOOLTIP_STYLE: {
     readonly fontSize: 12;
     readonly borderRadius: 10;
-    readonly border: "1px solid #E7E9EE";
+    readonly border: `1px solid ${string}`;
     readonly background: "#fff";
 };
 
@@ -488,12 +497,12 @@ declare const activeDot: (color: string) => {
 };
 /** Bar-chart hover cursor — soft grey fill behind the active bar. */
 declare const barCursor: {
-    readonly fill: "#EEF0F3";
+    readonly fill: string;
     readonly fillOpacity: 0.6;
 };
 /** Line/area-chart hover cursor — a faint vertical crosshair on the brand border color. */
 declare const crosshairCursor: {
-    readonly stroke: "#D8DBE1";
+    readonly stroke: string;
     readonly strokeWidth: 1;
     readonly strokeDasharray: "3 3";
 };
