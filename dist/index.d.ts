@@ -19,6 +19,15 @@ import * as TabsPrimitive from '@radix-ui/react-tabs';
  * presentation attributes, where `var()` does not resolve. Reading the computed
  * value yields a literal hex that works everywhere.
  */
+/**
+ * Clear the resolved `--warm-*` cache so `WARM`/`CHART_SERIES` re-read from the DOM on next
+ * access. Call this RIGHT AFTER injecting a new client's brand tokens — e.g. when the active
+ * client changes (FB-staff switch, or a single deploy resolving the client async after login).
+ * Without it, the first paint's palette (the default client's) stays cached and charts never
+ * re-theme. Synchronous per-client deploys don't need it (first read is already the right
+ * client), but it makes runtime client-switching re-theme correctly.
+ */
+declare function resetWarmCache(): void;
 declare const BASE: {
     readonly bg: "#F7F8FA";
     readonly card: "#FFFFFF";
@@ -747,4 +756,4 @@ interface DetailDrawerProps {
  */
 declare function DetailDrawer({ open, onOpenChange, title, description, width, footer, children, }: DetailDrawerProps): React.JSX.Element;
 
-export { AXIS_TICK, AutoGrid, BAR_RADIUS, BAR_RADIUS_H, Badge, type BadgeTone, BarGradient, Btn, CHART_HEIGHT, CHART_MARGIN, CHART_MARGIN_COMPACT, CHART_SERIES, Card, ChartCard, ChartDataTable, type ChartDataTableColumn, type ChartDataTableProps, ChartEmpty, type ChartEmptyProps, ChartGradient, CountUp, DataGridWrapper, Delta, DetailDrawer, EmptyState, ExpandableRow, GRID, GridRow, KpiStrip, KpiTile, KpiVariantContext, PageStack, PageTabList, PageTabTrigger, Pill, type RankedItem, RankedListCard, SPACE, SectionLabel, SegContent, SegList, SegTabs, SegTrigger, Sparkline, SplitPane, Stagger, TOOLTIP_STYLE, Td, Th, WARM, WarmGrid, WarmLegend, type WarmLegendItem, type WarmLegendProps, WarmTable, WarmThead, WarmTooltip, type WarmTooltipItem, type WarmTooltipProps, WarmTr, WidgetContainer, activeDot, axisTick, barCursor, barValueLabel, categoryXAxis, categoryYAxis, chartTip, crosshairCursor, numberYAxis, pressable, pressableSoft, referenceTarget, segItemClass, segTrackClass, seriesColor, timeXAxis };
+export { AXIS_TICK, AutoGrid, BAR_RADIUS, BAR_RADIUS_H, Badge, type BadgeTone, BarGradient, Btn, CHART_HEIGHT, CHART_MARGIN, CHART_MARGIN_COMPACT, CHART_SERIES, Card, ChartCard, ChartDataTable, type ChartDataTableColumn, type ChartDataTableProps, ChartEmpty, type ChartEmptyProps, ChartGradient, CountUp, DataGridWrapper, Delta, DetailDrawer, EmptyState, ExpandableRow, GRID, GridRow, KpiStrip, KpiTile, KpiVariantContext, PageStack, PageTabList, PageTabTrigger, Pill, type RankedItem, RankedListCard, SPACE, SectionLabel, SegContent, SegList, SegTabs, SegTrigger, Sparkline, SplitPane, Stagger, TOOLTIP_STYLE, Td, Th, WARM, WarmGrid, WarmLegend, type WarmLegendItem, type WarmLegendProps, WarmTable, WarmThead, WarmTooltip, type WarmTooltipItem, type WarmTooltipProps, WarmTr, WidgetContainer, activeDot, axisTick, barCursor, barValueLabel, categoryXAxis, categoryYAxis, chartTip, crosshairCursor, numberYAxis, pressable, pressableSoft, referenceTarget, resetWarmCache, segItemClass, segTrackClass, seriesColor, timeXAxis };

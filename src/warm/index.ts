@@ -1,4 +1,4 @@
-export { WARM, axisTick, chartTip, CHART_SERIES, seriesColor, GRID, AXIS_TICK, TOOLTIP_STYLE } from "./theme";
+export { WARM, resetWarmCache, axisTick, chartTip, CHART_SERIES, seriesColor, GRID, AXIS_TICK, TOOLTIP_STYLE } from "./theme";
 export { Card } from "./Card";
 export { pressable, pressableSoft } from "./press";
 export { SectionLabel } from "./SectionLabel";

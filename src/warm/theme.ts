@@ -30,6 +30,18 @@ function readVar(name: string, fallback: string): string {
   return fallback;
 }
 
+/**
+ * Clear the resolved `--warm-*` cache so `WARM`/`CHART_SERIES` re-read from the DOM on next
+ * access. Call this RIGHT AFTER injecting a new client's brand tokens — e.g. when the active
+ * client changes (FB-staff switch, or a single deploy resolving the client async after login).
+ * Without it, the first paint's palette (the default client's) stays cached and charts never
+ * re-theme. Synchronous per-client deploys don't need it (first read is already the right
+ * client), but it makes runtime client-switching re-theme correctly.
+ */
+export function resetWarmCache(): void {
+  for (const key in _varCache) delete _varCache[key];
+}
+
 // Full palette with Untoxicated fallbacks. Neutrals are the shared system; the
 // keys listed in BRAND_VARS below are overridable per client via CSS vars.
 const BASE = {
