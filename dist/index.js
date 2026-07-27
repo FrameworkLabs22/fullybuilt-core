@@ -1235,18 +1235,26 @@ var CSS = `
 .fb-btn--dark:hover:not(:disabled) { background:color-mix(in srgb, var(--warm-ink) 86%, #FFFFFF); }
 
 /* \u2500\u2500 focus \u2014 ONE ring for the whole system \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
-   Accent 400 at 2px with a 1px offset. Never remove it; never redefine it
+   Accent 600 at 2px with a 1px offset. Never remove it; never redefine it
    locally. This is the only place the accent ramp is allowed to touch a
-   control's outline. */
+   control's outline.
+
+   WHY 600 AND NOT 400: 400 is the stop the ramp was originally hand-tuned
+   around, and it fails WCAG 1.4.11 non-text contrast on white for every
+   tenant \u2014 2.57 to 2.79 against a 3.0 minimum. 500 still fails for the teal
+   palettes (2.95). 600 clears it everywhere (4.06 to 4.51) with room to
+   spare, and is the darkest stop that still reads as the brand's color
+   rather than as ink. A focus ring that only some keyboard users can see is
+   not a focus ring. */
 .fb-btn:focus-visible, .fb-tab:focus-visible, .fb-seg-btn:focus-visible,
 .fb-add:focus-visible, .fb-sorth:focus-visible {
-  outline:2px solid var(--accent-400); outline-offset:1px; }
+  outline:2px solid var(--accent-600); outline-offset:1px; }
 
 /* \u2500\u2500 inputs \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 */
 .fb-input { border:1px solid var(--warm-border); background:var(--warm-card); color:var(--warm-ink); border-radius:6px;
   transition: border-color .12s, box-shadow .12s; }
 .fb-input:hover { border-color:var(--warm-border-strong); }
-.fb-input:focus { outline:none; border-color:var(--accent-400); box-shadow:0 0 0 3px var(--accent-100); }
+.fb-input:focus { outline:none; border-color:var(--accent-600); box-shadow:0 0 0 3px var(--accent-100); }
 .fb-qty::-webkit-outer-spin-button, .fb-qty::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
 .fb-qty { -moz-appearance:textfield; appearance:textfield; }
 .fb-check { width:13px; height:13px; cursor:pointer; accent-color:var(--warm-primary); }
@@ -1254,11 +1262,11 @@ var CSS = `
 /* \u2500\u2500 dropdowns \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 */
 .fb-dd-trigger { cursor:pointer; font-weight:500; transition: border-color .12s; }
 .fb-dd-trigger:hover { border-color:var(--warm-border-strong); }
-.fb-dd-trigger:focus-visible { outline:2px solid var(--accent-400); outline-offset:1px; }
+.fb-dd-trigger:focus-visible { outline:2px solid var(--accent-600); outline-offset:1px; }
 .fb-dd { animation:fb-tip-in .14s ease-out; }
 .fb-dd-item { border:0; background:transparent; cursor:pointer; transition: background-color .1s; }
 .fb-dd-item:hover { background:var(--warm-chip); }
-.fb-dd-item:focus-visible { outline:2px solid var(--accent-400); outline-offset:-2px; }
+.fb-dd-item:focus-visible { outline:2px solid var(--accent-600); outline-offset:-2px; }
 
 /* \u2500\u2500 tabs and segmented controls \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
    Active state is a weight and a rule, not a colored fill \u2014 the tab bar sits
@@ -1294,7 +1302,7 @@ var CSS = `
 .fb-rowx { display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border:0; border-radius:5px;
   background:transparent; color:var(--warm-faint); cursor:pointer; opacity:0; transition: opacity .12s, color .12s, background-color .12s; }
 .fb-rowx:hover { color:var(--warm-danger); background:var(--warm-danger-soft); }
-.fb-rowx:focus-visible { outline:2px solid var(--accent-400); outline-offset:1px; }
+.fb-rowx:focus-visible { outline:2px solid var(--accent-600); outline-offset:1px; }
 .fb-row:hover .fb-rowx, .fb-rowx:focus-visible { opacity:1; }
 
 /* \u2500\u2500 definitions and tooltips \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
@@ -1325,9 +1333,9 @@ var CSS = `
   background:var(--accent-500); border:2.5px solid #FFFFFF; box-shadow:0 1px 4px rgba(0,0,0,0.25); cursor:grab; }
 .fb-range::-moz-range-thumb { width:13px; height:13px; border-radius:50%;
   background:var(--accent-500); border:2.5px solid #FFFFFF; box-shadow:0 1px 4px rgba(0,0,0,0.25); cursor:grab; }
-.fb-range:focus-visible { outline:2px solid var(--accent-400); outline-offset:2px; }
+.fb-range:focus-visible { outline:2px solid var(--accent-600); outline-offset:2px; }
 .fb-tickslider { position:relative; }
-.fb-tickslider:focus-within { outline:2px solid var(--accent-400); outline-offset:3px; border-radius:4px; }
+.fb-tickslider:focus-within { outline:2px solid var(--accent-600); outline-offset:3px; border-radius:4px; }
 .fb-tickslider input[type=range] { position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:ew-resize; margin:0; }
 
 /* \u2500\u2500 calendar \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 */

@@ -30,6 +30,16 @@ saturation would make a muted brand's focus ring invisible and a vivid brand's
 shout. Brand identity proper lives in `primary`, the surfaces and the chart
 series.
 
+**Focus rings use stop 600.** Not 400, which is the stop the ramp was originally
+tuned around: on white it lands between 2.57 and 2.79 against a 3.0 WCAG non-text
+minimum, for every tenant. 500 still fails the teal palettes. 600 clears it
+everywhere (4.06–4.51) and is the darkest stop that still reads as the brand's
+color rather than as ink.
+
+A brand whose accent should not derive from `primary` — Untoxicated's primary is a
+near-black while its actual brand color is yellow — can pin `--accent-*` directly
+in its `branding` block; explicit values always beat the derived ones.
+
 ## 2. Edges define, dividers whisper
 
 A card is defined by its **edge**, not by a shadow.
