@@ -1,12 +1,12 @@
 import { clsx } from 'clsx';
 import { extendTailwindMerge } from 'tailwind-merge';
 import { jsx, jsxs, Fragment } from 'react/jsx-runtime';
-import { X, ArrowUpRight, ArrowDownRight, CaretRight, DotsSixVertical } from '@phosphor-icons/react';
+import { X, ArrowUpRight, ArrowDownRight, CaretRight, Check, CopySimple, DotsSixVertical } from '@phosphor-icons/react';
 import { ResponsiveContainer, LineChart, Line, CartesianGrid } from 'recharts';
-import * as React3 from 'react';
+import * as React7 from 'react';
 import { createContext, useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useReducedMotion, motion, AnimatePresence, animate } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion, animate } from 'framer-motion';
 import * as TabsPrimitive from '@radix-ui/react-tabs';
 import * as ResizablePrimitive from 'react-resizable-panels';
 import * as SheetPrimitive from '@radix-ui/react-dialog';
@@ -32,9 +32,16 @@ var BASE = {
   // ── neutrals (shared across all clients) ──
   bg: "#F7F8FA",
   card: "#FFFFFF",
+  /** Faintly-lifted surface for a panel sitting on top of a card. */
+  cardRaised: "#FCFCFD",
+  // ── the text triad ──
+  // Three tiers, each a real step apart: headings/values → body/table text →
+  // labels/subtext. The middle tier is deliberately dark; a mid-gray body tier
+  // reads as disabled next to a near-black heading, and the faintest tier has to
+  // stay legible because it carries units, timestamps and column labels.
   ink: "#1C1E24",
-  sub: "#6E727B",
-  faint: "#A6ABB5",
+  sub: "#3E424A",
+  faint: "#6E727B",
   border: "#E7E9EE",
   borderStrong: "#D8DBE1",
   chip: "#EEF0F3",
@@ -59,13 +66,40 @@ var BASE = {
   badgeNegBg: "#FCE7E6",
   warn: "#C77A1E",
   warnSoft: "#FBF1E2",
-  danger: "#d94a36"
+  danger: "#d94a36",
+  dangerSoft: "#FCE7E6",
+  // ── extra chart/state tones ──
+  /** Overstock / cash-tied-up. Indigo sits at the same OKLCH brightness band as
+   *  `pos`/`danger`, so "too much stock" reads as a real state and not as the
+   *  gray of missing data. */
+  excess: "#667DBC",
+  excessSoft: "#EBF0FD",
+  /** Plan / baseline series in charts. A chart tone on purpose — deliberately NOT
+   *  tied to the text triad, so retuning body text can't shift a chart. */
+  slate: "#6E727B"
 };
 var BRAND_VARS = {
+  bg: "--warm-bg",
+  card: "--warm-card",
+  cardRaised: "--warm-card-raised",
+  ink: "--warm-ink",
+  sub: "--warm-sub",
+  faint: "--warm-faint",
+  border: "--warm-border",
+  borderStrong: "--warm-border-strong",
+  chip: "--warm-chip",
+  track: "--warm-track",
   primary: "--warm-primary",
   primarySoft: "--warm-primary-soft",
   pos: "--warm-pos",
   posSoft: "--warm-pos-soft",
+  warn: "--warm-warn",
+  warnSoft: "--warm-warn-soft",
+  danger: "--warm-danger",
+  dangerSoft: "--warm-danger-soft",
+  excess: "--warm-excess",
+  excessSoft: "--warm-excess-soft",
+  slate: "--warm-slate",
   blue: "--warm-chart-line",
   blueSoft: "--warm-chart-fill",
   blueMid: "--warm-chart-bar",
@@ -79,15 +113,58 @@ var WARM = new Proxy(BASE, {
     return target[prop];
   }
 });
-var axisTick = { fontSize: 11, fill: WARM.sub };
+var ACCENT_FALLBACK = [
+  "#FCF4E9",
+  // 50
+  "#F5E6D0",
+  // 100
+  "#E9D0AC",
+  // 200
+  "#D5B17A",
+  // 300
+  "#C19653",
+  // 400 — focus rings
+  "#B8893A",
+  // 500 — the base brand step
+  "#9E711C",
+  // 600
+  "#845A00",
+  // 700
+  "#694500",
+  // 800
+  "#513400"
+  // 900
+];
+var ACCENT_STOPS = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900];
+var ACCENT = new Proxy({}, {
+  get(_t, prop) {
+    const stop = Number(prop);
+    const i = ACCENT_STOPS.indexOf(stop);
+    if (i === -1) return void 0;
+    return readVar(`--accent-${stop}`, ACCENT_FALLBACK[i]);
+  }
+});
+var axisTick = {
+  fontSize: 11,
+  get fill() {
+    return WARM.faint;
+  }
+};
 var chartTip = {
   contentStyle: {
     fontSize: 12,
     borderRadius: 10,
-    border: `1px solid ${WARM.border}`,
+    get border() {
+      return `1px solid ${WARM.border}`;
+    },
     background: "#fff"
   },
-  cursor: { fill: WARM.chip, fillOpacity: 0.6 }
+  cursor: {
+    get fill() {
+      return WARM.chip;
+    },
+    fillOpacity: 0.6
+  }
 };
 var SERIES_FALLBACK = [
   "#0E0E06",
@@ -127,7 +204,9 @@ var CHART_SERIES = new Proxy(SERIES_FALLBACK, {
 var seriesColor = (i) => CHART_SERIES[i % CHART_SERIES.length];
 var GRID = {
   strokeDasharray: "3 3",
-  stroke: WARM.track
+  get stroke() {
+    return WARM.track;
+  }
 };
 var AXIS_TICK = axisTick;
 var TOOLTIP_STYLE = chartTip.contentStyle;
@@ -146,19 +225,14 @@ function cn(...inputs) {
 var BASE2 = "transition-[transform,color,background-color,border-color,box-shadow] duration-150 ease-[cubic-bezier(0.25,1,0.5,1)] motion-reduce:transition-none motion-reduce:active:scale-100";
 var pressable = `${BASE2} active:scale-[0.97]`;
 var pressableSoft = `${BASE2} active:scale-[0.985]`;
-var ELEVATION = {
-  card: "shadow-card",
-  raised: "shadow-raised",
-  flat: "shadow-none"
-};
-function Card({ pad = 24, interactive, elevation = "card", className, style, children, ...props }) {
+function Card({ pad = 24, interactive, elevation = "flat", className, style, children, ...props }) {
   return /* @__PURE__ */ jsx(
     "div",
     {
       className: cn(
-        "bg-warm-card border border-warm-border rounded-card",
-        ELEVATION[elevation],
-        interactive && cn("transition-shadow duration-300 hover:shadow-card-hover", pressableSoft),
+        "bg-warm-card border border-warm-border-strong rounded-card",
+        elevation === "raised" && "shadow-raised",
+        interactive && cn("transition-colors duration-150 hover:bg-warm-chip/30", pressableSoft),
         className
       ),
       style: { padding: pad, ...style },
@@ -177,26 +251,48 @@ function SectionLabel({ className, style, ...props }) {
     }
   );
 }
-var toneClass = {
-  neutral: "bg-warm-chip text-warm-sub",
-  danger: "bg-[#FCE9E6] text-warm-danger",
-  warn: "bg-warm-warn-soft text-warm-warn",
-  ok: "bg-warm-pos-soft text-warm-pos",
-  accent: "bg-warm-primary-soft text-warm-primary"
+
+// src/system/tone.ts
+function tone(t) {
+  switch (t) {
+    case "pos":
+      return { fg: WARM.pos, bg: WARM.posSoft };
+    case "warn":
+      return { fg: WARM.warn, bg: WARM.warnSoft };
+    case "neg":
+      return { fg: WARM.danger, bg: WARM.dangerSoft };
+    case "excess":
+      return { fg: WARM.excess, bg: WARM.excessSoft };
+    case "muted":
+    default:
+      return { fg: WARM.sub, bg: WARM.chip };
+  }
+}
+var ALIASES = {
+  neutral: "muted",
+  ok: "pos",
+  danger: "neg",
+  // `accent` predates the accent ramp being interaction-only. It now renders as
+  // the neutral tone rather than painting a surface with the accent color.
+  accent: "muted"
 };
-function Badge({ tone = "neutral", className, children, style, ...props }) {
-  return /* @__PURE__ */ jsx(
+function Badge({ tone: tone2 = "muted", className, children, style, ...props }) {
+  const t = tone(ALIASES[tone2] ?? tone2);
+  return /* @__PURE__ */ jsxs(
     "span",
     {
       className: cn(
-        "inline-flex items-center gap-1.5 rounded-pill font-bold whitespace-nowrap",
+        "inline-flex items-center gap-1.5 whitespace-nowrap rounded-md px-1.5 py-px",
+        "font-sans text-[11px] font-medium leading-[18px]",
         "transition-colors duration-150 ease-[cubic-bezier(0.25,1,0.5,1)]",
-        toneClass[tone],
         className
       ),
-      style: { fontSize: 11.5, padding: "3px 9px", ...style },
+      style: { color: t.fg, background: t.bg, border: `1px solid ${t.fg}33`, ...style },
       ...props,
-      children
+      children: [
+        /* @__PURE__ */ jsx("span", { className: "h-1.5 w-1.5 shrink-0 rounded-full", style: { background: t.fg } }),
+        children
+      ]
     }
   );
 }
@@ -240,29 +336,11 @@ function Pill({ icon, active, className, children, ...props }) {
     }
   );
 }
-var kindClass = {
-  primary: "bg-brand-red text-white border-brand-red shadow-btn-primary hover:bg-brand-red-light",
-  ghost: "bg-warm-card text-warm-ink border-warm-border hover:bg-warm-chip",
-  dark: "bg-warm-ink text-white border-warm-ink"
-};
 function Btn({ kind = "primary", icon, className, children, ...props }) {
-  return /* @__PURE__ */ jsxs(
-    "button",
-    {
-      type: "button",
-      className: cn(
-        "inline-flex items-center gap-2 h-[38px] px-4 rounded-pill text-[13px] font-bold border transition-colors",
-        pressable,
-        kindClass[kind],
-        className
-      ),
-      ...props,
-      children: [
-        icon,
-        children
-      ]
-    }
-  );
+  return /* @__PURE__ */ jsxs("button", { type: "button", className: cn(`fb-btn fb-btn--${kind}`, className), ...props, children: [
+    icon,
+    children
+  ] });
 }
 function Sparkline({ data, dataKey, color = WARM.blue, width = 70, height = 28 }) {
   if (!data || data.length < 3) return /* @__PURE__ */ jsx("div", { style: { width, height } });
@@ -296,7 +374,7 @@ function Skeleton({
   );
 }
 function KpiTile(props) {
-  const ctxVariant = React3.useContext(KpiVariantContext);
+  const ctxVariant = React7.useContext(KpiVariantContext);
   const variant = props.variant ?? ctxVariant;
   return variant === "strip" ? /* @__PURE__ */ jsx(KpiStripCell, { ...props }) : /* @__PURE__ */ jsx(KpiCard, { ...props });
 }
@@ -381,36 +459,51 @@ function ChartCard({
   dataTable,
   children
 }) {
-  return /* @__PURE__ */ jsxs(Card, { className, children: [
-    /* @__PURE__ */ jsxs("div", { className: "flex items-start justify-between", style: { marginBottom: SPACE.headerGap }, children: [
-      /* @__PURE__ */ jsxs("div", { children: [
-        /* @__PURE__ */ jsx("div", { className: "text-warm-ink font-bold", style: { fontSize: 14.5, letterSpacing: "-0.01em" }, children: title }),
-        subtitle && /* @__PURE__ */ jsx("div", { className: "text-warm-sub", style: { fontSize: 12, marginTop: 2 }, children: subtitle })
-      ] }),
-      right
-    ] }),
-    /* @__PURE__ */ jsx(
-      "div",
-      {
-        style: { height },
-        ...ariaLabel && !loading && !empty ? { role: "img", "aria-label": ariaLabel } : {},
-        children: /* @__PURE__ */ jsx(AnimatePresence, { mode: "wait", initial: false, children: /* @__PURE__ */ jsx(
-          motion.div,
+  return (
+    // pad={0}: the header sits on its own ruled band rather than floating in the
+    // card's padding. The rule is the faint `border` — an internal divider, not an
+    // edge — so it separates header from body without competing with the card's
+    // own boundary. See the "edges define, dividers whisper" note on <Card>.
+    /* @__PURE__ */ jsxs(Card, { className, pad: 0, children: [
+      /* @__PURE__ */ jsxs(
+        "div",
+        {
+          className: "flex items-start justify-between gap-3 px-4 py-3",
+          style: { borderBottom: "1px solid var(--warm-border)" },
+          children: [
+            /* @__PURE__ */ jsxs("div", { children: [
+              /* @__PURE__ */ jsx("div", { className: "text-[13px] font-semibold text-warm-ink", children: title }),
+              subtitle && /* @__PURE__ */ jsx("div", { className: "mt-0.5 text-xs text-warm-sub", children: subtitle })
+            ] }),
+            right
+          ]
+        }
+      ),
+      /* @__PURE__ */ jsxs("div", { className: "px-1 py-3", children: [
+        /* @__PURE__ */ jsx(
+          "div",
           {
-            className: "h-full w-full",
-            initial: { opacity: 0 },
-            animate: { opacity: 1 },
-            exit: { opacity: 0 },
-            transition: { duration: 0.2, ease: [0.25, 1, 0.5, 1] },
-            children: loading ? /* @__PURE__ */ jsx(Skeleton, { className: "h-full w-full" }) : empty ? /* @__PURE__ */ jsx(ChartEmpty, { message: emptyMessage }) : /* @__PURE__ */ jsx(ResponsiveContainer, { width: "100%", height: "100%", children })
-          },
-          loading ? "loading" : empty ? "empty" : "content"
-        ) })
-      }
-    ),
-    dataTable && !loading && !empty && dataTable,
-    legend && !loading && !empty && /* @__PURE__ */ jsx("div", { style: { marginTop: 10 }, children: legend })
-  ] });
+            style: { height },
+            ...ariaLabel && !loading && !empty ? { role: "img", "aria-label": ariaLabel } : {},
+            children: /* @__PURE__ */ jsx(AnimatePresence, { mode: "wait", initial: false, children: /* @__PURE__ */ jsx(
+              motion.div,
+              {
+                className: "h-full w-full",
+                initial: { opacity: 0 },
+                animate: { opacity: 1 },
+                exit: { opacity: 0 },
+                transition: { duration: 0.2, ease: [0.25, 1, 0.5, 1] },
+                children: loading ? /* @__PURE__ */ jsx(Skeleton, { className: "h-full w-full" }) : empty ? /* @__PURE__ */ jsx(ChartEmpty, { message: emptyMessage }) : /* @__PURE__ */ jsx(ResponsiveContainer, { width: "100%", height: "100%", children })
+              },
+              loading ? "loading" : empty ? "empty" : "content"
+            ) })
+          }
+        ),
+        dataTable && !loading && !empty && dataTable,
+        legend && !loading && !empty && /* @__PURE__ */ jsx("div", { style: { marginTop: 10 }, children: legend })
+      ] })
+    ] })
+  );
 }
 var BAR_STAGGER = { initial: {}, animate: { transition: { staggerChildren: 0.05 } } };
 var BAR_ROW = { initial: {}, animate: {} };
@@ -743,7 +836,7 @@ function EmptyState({ icon, title, description, action, className, ...props }) {
   );
 }
 var Tabs = TabsPrimitive.Root;
-var TabsList = React3.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ jsx(
+var TabsList = React7.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ jsx(
   TabsPrimitive.List,
   {
     ref,
@@ -755,7 +848,7 @@ var TabsList = React3.forwardRef(({ className, ...props }, ref) => /* @__PURE__ 
   }
 ));
 TabsList.displayName = TabsPrimitive.List.displayName;
-var TabsTrigger = React3.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ jsx(
+var TabsTrigger = React7.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ jsx(
   TabsPrimitive.Trigger,
   {
     ref,
@@ -767,7 +860,7 @@ var TabsTrigger = React3.forwardRef(({ className, ...props }, ref) => /* @__PURE
   }
 ));
 TabsTrigger.displayName = TabsPrimitive.Trigger.displayName;
-var TabsContent = React3.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ jsx(
+var TabsContent = React7.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ jsx(
   TabsPrimitive.Content,
   {
     ref,
@@ -779,85 +872,31 @@ var TabsContent = React3.forwardRef(({ className, ...props }, ref) => /* @__PURE
   }
 ));
 TabsContent.displayName = TabsPrimitive.Content.displayName;
-var staggerChildren = {
-  initial: {},
-  animate: { transition: { staggerChildren: 0.04 } }
-};
-var cardEnter = {
-  initial: { opacity: 0, y: 10 },
-  animate: { opacity: 1, y: 0, transition: { duration: 0.3, ease: [0.25, 1, 0.5, 1] } }
-};
-var SPRING = { type: "spring", stiffness: 440, damping: 42 };
-typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? { } : { };
-var SegCtx = React3.createContext(null);
-function SegTabs({
-  value,
-  defaultValue,
-  onValueChange,
-  children,
-  ...props
-}) {
-  const layoutId = React3.useId();
-  const [internal, setInternal] = React3.useState(value ?? defaultValue);
-  const current = value ?? internal;
-  const handleChange = React3.useCallback(
-    (v) => {
-      setInternal(v);
-      onValueChange?.(v);
-    },
-    [onValueChange]
-  );
-  return /* @__PURE__ */ jsx(SegCtx.Provider, { value: { value: current, layoutId }, children: /* @__PURE__ */ jsx(Tabs, { value, defaultValue, onValueChange: handleChange, ...props, children }) });
+function SegTabs(props) {
+  return /* @__PURE__ */ jsx(Tabs, { ...props });
 }
-var SegList = React3.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ jsx(
-  TabsList,
+var SegList = React7.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ jsx(TabsList, { ref, className: cn("fb-seg-track h-auto", className), ...props }));
+SegList.displayName = "SegList";
+var SegTrigger = React7.forwardRef(({ className, value, children, ...props }, ref) => /* @__PURE__ */ jsx(
+  TabsTrigger,
   {
     ref,
-    className: cn("h-auto gap-0.5 rounded-pill bg-warm-chip p-1 text-warm-sub", className),
-    ...props
+    value,
+    className: cn("fb-seg-btn rounded px-2.5 py-1 text-xs font-medium", className),
+    ...props,
+    children
   }
 ));
-SegList.displayName = "SegList";
-var SegTrigger = React3.forwardRef(({ className, value, children, ...props }, ref) => {
-  const ctx = React3.useContext(SegCtx);
-  const reduced = useReducedMotion();
-  const active = ctx?.value != null && ctx.value === value;
-  return /* @__PURE__ */ jsxs(
-    TabsTrigger,
-    {
-      ref,
-      value,
-      className: cn(
-        "relative rounded-pill px-3.5 py-1.5 text-body-sm font-semibold text-warm-sub transition-colors",
-        "data-[state=active]:font-bold data-[state=active]:text-warm-ink",
-        className
-      ),
-      ...props,
-      children: [
-        active && ctx && /* @__PURE__ */ jsx(
-          motion.span,
-          {
-            layoutId: reduced ? void 0 : `seg-pill-${ctx.layoutId}`,
-            transition: SPRING,
-            className: "absolute inset-0 rounded-pill bg-white shadow-sm",
-            "aria-hidden": true
-          }
-        ),
-        /* @__PURE__ */ jsx("span", { className: "relative", children })
-      ]
-    }
-  );
-});
 SegTrigger.displayName = "SegTrigger";
 var SegContent = TabsContent;
-var segTrackClass = "gap-0.5 rounded-pill bg-warm-chip p-1";
-var segItemClass = "rounded-pill px-3.5 py-1.5 text-body-sm font-semibold text-warm-sub transition-colors data-[state=on]:bg-white data-[state=on]:font-bold data-[state=on]:text-warm-ink data-[state=on]:shadow-sm";
+var segTrackClass = "fb-seg-track";
+var segItemClass = "fb-seg-btn rounded px-2.5 py-1 text-xs font-medium data-[state=on]:bg-warm-card data-[state=on]:text-warm-ink data-[state=on]:shadow-[inset_0_0_0_1px_var(--warm-border-strong)]";
 function PageTabList({ className, children, ...props }) {
   return /* @__PURE__ */ jsx(
     TabsList,
     {
       className: cn(
-        "h-auto w-fit gap-1 rounded-pill border border-warm-border bg-white p-1.5 shadow-card",
+        "h-auto w-full justify-start gap-5 rounded-none border-0 border-b border-warm-border bg-transparent p-0",
         className
       ),
       ...props,
@@ -865,30 +904,19 @@ function PageTabList({ className, children, ...props }) {
     }
   );
 }
-function PageTabTrigger({ active, icon, className, children, ...props }) {
-  const reduced = useReducedMotion() ?? false;
+function PageTabTrigger({ active: _active, icon, className, children, ...props }) {
   return /* @__PURE__ */ jsxs(
     TabsTrigger,
     {
       className: cn(
-        "relative rounded-pill px-5 py-2 text-body-sm font-semibold text-warm-sub transition-colors",
-        "hover:text-warm-ink data-[state=active]:font-bold data-[state=active]:text-brand-red",
-        "data-[state=active]:bg-transparent data-[state=active]:shadow-none",
+        "fb-tab -mb-px flex items-center gap-2 rounded-none border-0 border-b-2 bg-transparent px-0 pb-2.5 pt-1",
+        "text-[13px] font-medium shadow-none transition-colors data-[state=active]:shadow-none",
         className
       ),
       ...props,
       children: [
-        active && /* @__PURE__ */ jsx(
-          motion.span,
-          {
-            layoutId: reduced ? void 0 : "page-tab-pill",
-            transition: SPRING,
-            className: "absolute inset-0 rounded-pill bg-warm-primary-soft",
-            "aria-hidden": true
-          }
-        ),
-        icon && /* @__PURE__ */ jsx("span", { className: "relative mr-1.5 inline-flex", children: icon }),
-        /* @__PURE__ */ jsx("span", { className: "relative", children })
+        icon && /* @__PURE__ */ jsx("span", { className: "inline-flex", children: icon }),
+        children
       ]
     }
   );
@@ -913,10 +941,19 @@ function CountUp({ value, format = (n) => Math.round(n).toLocaleString(), durati
   }, [value, duration, reduced]);
   return /* @__PURE__ */ jsx("span", { children: format(display) });
 }
+var staggerChildren = {
+  initial: {},
+  animate: { transition: { staggerChildren: 0.04 } }
+};
+var cardEnter = {
+  initial: { opacity: 0, y: 10 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.3, ease: [0.25, 1, 0.5, 1] } }
+};
+typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? { } : { };
 function Stagger({ className, children }) {
   const reduced = useReducedMotion();
   if (reduced) return /* @__PURE__ */ jsx("div", { className, children });
-  return /* @__PURE__ */ jsx(motion.div, { className, variants: staggerChildren, initial: "initial", animate: "animate", children: React3.Children.map(
+  return /* @__PURE__ */ jsx(motion.div, { className, variants: staggerChildren, initial: "initial", animate: "animate", children: React7.Children.map(
     children,
     (child) => child == null ? child : /* @__PURE__ */ jsx(motion.div, { variants: cardEnter, children: child })
   ) });
@@ -1017,10 +1054,10 @@ var ResizableHandle = ({
   }
 );
 function useIsLg() {
-  const [isLg, setIsLg] = React3.useState(
+  const [isLg, setIsLg] = React7.useState(
     () => typeof window !== "undefined" && window.matchMedia("(min-width: 1024px)").matches
   );
-  React3.useEffect(() => {
+  React7.useEffect(() => {
     const mq = window.matchMedia("(min-width: 1024px)");
     const on = () => setIsLg(mq.matches);
     mq.addEventListener("change", on);
@@ -1067,7 +1104,7 @@ function DataGridWrapper({
   return /* @__PURE__ */ jsx("div", { className: cn("overflow-x-auto", className), ...props, children });
 }
 function ExpandableRow({ summary, detail, columns, defaultOpen = false }) {
-  const [open, setOpen] = React3.useState(defaultOpen);
+  const [open, setOpen] = React7.useState(defaultOpen);
   return /* @__PURE__ */ jsxs(Fragment, { children: [
     /* @__PURE__ */ jsxs(WarmTr, { className: "cursor-pointer", onClick: () => setOpen((o) => !o), children: [
       /* @__PURE__ */ jsx(Td, { className: "w-6 align-middle text-warm-faint", children: /* @__PURE__ */ jsx(CaretRight, { size: 15, className: cn("transition-transform", open && "rotate-90") }) }),
@@ -1078,7 +1115,7 @@ function ExpandableRow({ summary, detail, columns, defaultOpen = false }) {
 }
 var Sheet = SheetPrimitive.Root;
 var SheetPortal = SheetPrimitive.Portal;
-var SheetOverlay = React3.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ jsx(
+var SheetOverlay = React7.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ jsx(
   SheetPrimitive.Overlay,
   {
     className: cn(
@@ -1106,7 +1143,7 @@ var sheetVariants = cva(
     }
   }
 );
-var SheetContent = React3.forwardRef(({ side = "right", className, children, ...props }, ref) => /* @__PURE__ */ jsxs(SheetPortal, { children: [
+var SheetContent = React7.forwardRef(({ side = "right", className, children, ...props }, ref) => /* @__PURE__ */ jsxs(SheetPortal, { children: [
   /* @__PURE__ */ jsx(SheetOverlay, {}),
   /* @__PURE__ */ jsxs(
     SheetPrimitive.Content,
@@ -1139,7 +1176,7 @@ var SheetHeader = ({
   }
 );
 SheetHeader.displayName = "SheetHeader";
-var SheetTitle = React3.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ jsx(
+var SheetTitle = React7.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ jsx(
   SheetPrimitive.Title,
   {
     ref,
@@ -1148,7 +1185,7 @@ var SheetTitle = React3.forwardRef(({ className, ...props }, ref) => /* @__PURE_
   }
 ));
 SheetTitle.displayName = SheetPrimitive.Title.displayName;
-var SheetDescription = React3.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ jsx(
+var SheetDescription = React7.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ jsx(
   SheetPrimitive.Description,
   {
     ref,
@@ -1176,7 +1213,412 @@ function DetailDrawer({
     footer && /* @__PURE__ */ jsx("div", { className: "mt-4 flex items-center justify-end gap-2 border-t border-warm-border pt-4", children: footer })
   ] }) });
 }
+var CSS = `
+/* \u2500\u2500 buttons \u2014 ranked by darkness, not by hue \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+   primary (ink) > secondary (muted fill) > ghost (bare text). Rank reads at a
+   glance in any brand palette, which a hue-coded hierarchy does not. */
+.fb-btn { display:inline-flex; align-items:center; gap:6px; border-radius:6px; padding:5px 12px;
+  font-size:12px; font-weight:600; line-height:18px; border:1px solid transparent; cursor:pointer;
+  transition: background-color .12s, border-color .12s, color .12s; }
+.fb-btn:disabled { opacity:.5; cursor:default; }
+.fb-btn--primary { background:var(--warm-primary); color:var(--warm-primary-fg, #FFFFFF); }
+.fb-btn--primary:hover:not(:disabled) { background:color-mix(in srgb, var(--warm-primary) 86%, #FFFFFF); }
+.fb-btn--secondary { background:var(--warm-chip); border-color:var(--warm-border); color:var(--warm-ink); font-weight:500; }
+.fb-btn--secondary:hover:not(:disabled) { background:color-mix(in srgb, var(--warm-chip) 88%, #000000); border-color:var(--warm-border-strong); }
+.fb-btn--ghost { background:transparent; color:var(--warm-sub); font-weight:500; }
+.fb-btn--ghost:hover:not(:disabled) { background:var(--warm-chip); color:var(--warm-ink); }
+.fb-btn--danger { background:var(--warm-card); border-color:var(--warm-danger); color:var(--warm-danger); }
+.fb-btn--danger:hover:not(:disabled) { background:var(--warm-danger-soft); }
+/* Pinned to ink regardless of the tenant's primary. Kept for surfaces that need a
+   near-black button even where the brand color is light. */
+.fb-btn--dark { background:var(--warm-ink); color:var(--warm-card); }
+.fb-btn--dark:hover:not(:disabled) { background:color-mix(in srgb, var(--warm-ink) 86%, #FFFFFF); }
 
-export { AXIS_TICK, AutoGrid, BAR_RADIUS, BAR_RADIUS_H, Badge, BarGradient, Btn, CHART_HEIGHT, CHART_MARGIN, CHART_MARGIN_COMPACT, CHART_SERIES, Card, ChartCard, ChartDataTable, ChartEmpty, ChartGradient, CountUp, DataGridWrapper, Delta, DetailDrawer, EmptyState, ExpandableRow, GRID, GridRow, KpiStrip, KpiTile, KpiVariantContext, PageStack, PageTabList, PageTabTrigger, Pill, RankedListCard, SPACE, SectionLabel, SegContent, SegList, SegTabs, SegTrigger, Sparkline, SplitPane, Stagger, TOOLTIP_STYLE, Td, Th, WARM, WarmGrid, WarmLegend, WarmTable, WarmThead, WarmTooltip, WarmTr, WidgetContainer, activeDot, axisTick, barCursor, barValueLabel, categoryXAxis, categoryYAxis, chartTip, crosshairCursor, numberYAxis, pressable, pressableSoft, referenceTarget, resetWarmCache, segItemClass, segTrackClass, seriesColor, timeXAxis };
+/* \u2500\u2500 focus \u2014 ONE ring for the whole system \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+   Accent 400 at 2px with a 1px offset. Never remove it; never redefine it
+   locally. This is the only place the accent ramp is allowed to touch a
+   control's outline. */
+.fb-btn:focus-visible, .fb-tab:focus-visible, .fb-seg-btn:focus-visible,
+.fb-add:focus-visible, .fb-sorth:focus-visible {
+  outline:2px solid var(--accent-400); outline-offset:1px; }
+
+/* \u2500\u2500 inputs \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 */
+.fb-input { border:1px solid var(--warm-border); background:var(--warm-card); color:var(--warm-ink); border-radius:6px;
+  transition: border-color .12s, box-shadow .12s; }
+.fb-input:hover { border-color:var(--warm-border-strong); }
+.fb-input:focus { outline:none; border-color:var(--accent-400); box-shadow:0 0 0 3px var(--accent-100); }
+.fb-qty::-webkit-outer-spin-button, .fb-qty::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
+.fb-qty { -moz-appearance:textfield; appearance:textfield; }
+.fb-check { width:13px; height:13px; cursor:pointer; accent-color:var(--warm-primary); }
+
+/* \u2500\u2500 dropdowns \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 */
+.fb-dd-trigger { cursor:pointer; font-weight:500; transition: border-color .12s; }
+.fb-dd-trigger:hover { border-color:var(--warm-border-strong); }
+.fb-dd-trigger:focus-visible { outline:2px solid var(--accent-400); outline-offset:1px; }
+.fb-dd { animation:fb-tip-in .14s ease-out; }
+.fb-dd-item { border:0; background:transparent; cursor:pointer; transition: background-color .1s; }
+.fb-dd-item:hover { background:var(--warm-chip); }
+.fb-dd-item:focus-visible { outline:2px solid var(--accent-400); outline-offset:-2px; }
+
+/* \u2500\u2500 tabs and segmented controls \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+   Active state is a weight and a rule, not a colored fill \u2014 the tab bar sits
+   above the content it switches and should not compete with it.
+
+   Both selectors are listed on each rule: .on for plain buttons, and
+   [data-state=active] for the Radix-backed wrappers, so the two spellings of
+   "this one is selected" cannot drift apart visually. */
+.fb-tab { color:var(--warm-sub); border-color:transparent; }
+.fb-tab:hover { color:var(--warm-ink); }
+.fb-tab.on, .fb-tab[data-state="active"] { color:var(--warm-ink); border-color:var(--warm-primary); }
+.fb-seg-btn { color:var(--warm-sub); background:transparent; transition: color .12s; white-space:nowrap; }
+.fb-seg-btn:hover { color:var(--warm-ink); }
+.fb-seg-btn.on, .fb-seg-btn[data-state="active"] {
+  color:var(--warm-ink); background:var(--warm-card); box-shadow:inset 0 0 0 1px var(--warm-border-strong); }
+.fb-seg-track { display:inline-flex; align-items:center; gap:2px; border-radius:6px; padding:2px;
+  background:var(--warm-bg); border:1px solid var(--warm-border); }
+
+/* \u2500\u2500 table rows and row-scoped affordances \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+   The copy and remove buttons are invisible until their row is hovered or they
+   take keyboard focus \u2014 present when wanted, silent otherwise. The :focus-visible
+   half is what keeps them reachable without a mouse. */
+.fb-row { transition: background-color .1s; }
+.fb-row:hover { background:color-mix(in srgb, var(--warm-chip) 40%, transparent); }
+.fb-sorth:hover { color:var(--warm-ink); }
+.fb-add { color:var(--warm-faint); transition: color .12s, border-color .12s; }
+.fb-add:hover:not(:disabled) { color:var(--warm-sub); border-color:var(--warm-faint); }
+.fb-copy { display:inline-flex; align-items:center; vertical-align:-1px; padding:0 2px; border:0;
+  background:transparent; color:var(--warm-faint); cursor:pointer; opacity:0; transition: opacity .12s, color .12s; }
+.fb-copy:hover { color:var(--warm-ink); }
+.fb-copy.on { opacity:1; color:var(--warm-pos); }
+.fb-row:hover .fb-copy, .fb-copy:focus-visible { opacity:1; }
+.fb-rowx { display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border:0; border-radius:5px;
+  background:transparent; color:var(--warm-faint); cursor:pointer; opacity:0; transition: opacity .12s, color .12s, background-color .12s; }
+.fb-rowx:hover { color:var(--warm-danger); background:var(--warm-danger-soft); }
+.fb-rowx:focus-visible { outline:2px solid var(--accent-400); outline-offset:1px; }
+.fb-row:hover .fb-rowx, .fb-rowx:focus-visible { opacity:1; }
+
+/* \u2500\u2500 definitions and tooltips \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+   A dotted underline marks a term that has a definition \u2014 discoverable without
+   an icon cluttering the label. The tip itself is dark-on-light: it is transient
+   UI, and inverting it separates it from the page instead of competing with it. */
+.fb-def { cursor:help; text-decoration:underline dotted var(--warm-faint); text-decoration-thickness:1px; text-underline-offset:3px; }
+.fb-tipbox { position:fixed; z-index:70; width:max-content; max-width:260px; pointer-events:none;
+  background:var(--warm-ink); color:var(--warm-border); border:1px solid color-mix(in srgb, var(--warm-ink) 82%, #FFFFFF); border-radius:8px; padding:8px 11px;
+  font-size:12px; line-height:1.5; font-weight:400; letter-spacing:normal; text-transform:none; text-align:left;
+  box-shadow:0 8px 24px rgba(16,18,24,0.22); }
+.fb-tipin { animation:fb-tip-in .14s ease-out; }
+
+/* \u2500\u2500 toasts \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 */
+.fb-toaster { position:fixed; right:20px; bottom:20px; z-index:60; display:flex; flex-direction:column; gap:8px; }
+.fb-toast { display:flex; align-items:flex-start; gap:9px; width:320px; max-width:calc(100vw - 40px);
+  background:var(--warm-ink); border:1px solid color-mix(in srgb, var(--warm-ink) 82%, #FFFFFF); border-radius:8px; padding:10px 12px;
+  box-shadow:0 8px 24px rgba(0,0,0,0.25); animation:fb-toast-in .18s ease-out; }
+.fb-toast-title { font-size:12.5px; font-weight:600; line-height:1.375; color:var(--warm-bg); }
+.fb-toast-sub { margin-top:2px; font-size:11px; line-height:1.375; color:color-mix(in srgb, var(--warm-bg) 68%, var(--warm-ink)); }
+.fb-toast-x { flex-shrink:0; font-size:13px; line-height:1; background:transparent; border:0; cursor:pointer;
+  color:color-mix(in srgb, var(--warm-bg) 48%, var(--warm-ink)); }
+.fb-toast-x:hover { color:var(--warm-bg); }
+
+/* \u2500\u2500 sliders \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 */
+.fb-range { -webkit-appearance:none; appearance:none; height:4px; border-radius:2px; background:var(--warm-track); outline:none; cursor:pointer; }
+.fb-range::-webkit-slider-thumb { -webkit-appearance:none; appearance:none; width:16px; height:16px; border-radius:50%;
+  background:var(--accent-500); border:2.5px solid #FFFFFF; box-shadow:0 1px 4px rgba(0,0,0,0.25); cursor:grab; }
+.fb-range::-moz-range-thumb { width:13px; height:13px; border-radius:50%;
+  background:var(--accent-500); border:2.5px solid #FFFFFF; box-shadow:0 1px 4px rgba(0,0,0,0.25); cursor:grab; }
+.fb-range:focus-visible { outline:2px solid var(--accent-400); outline-offset:2px; }
+.fb-tickslider { position:relative; }
+.fb-tickslider:focus-within { outline:2px solid var(--accent-400); outline-offset:3px; border-radius:4px; }
+.fb-tickslider input[type=range] { position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:ew-resize; margin:0; }
+
+/* \u2500\u2500 calendar \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 */
+.fb-cal-day { border-radius:6px; transition: background-color .08s; cursor:pointer; }
+.fb-cal-day:hover { background:var(--warm-chip); }
+
+/* \u2500\u2500 overlays \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 */
+.fb-drawer { animation:fb-drawer-in .2s ease-out; }
+.fb-scrim { animation:fb-fade-in .15s ease-out; }
+.fb-chart-reveal { animation:fb-chart-reveal .5s ease-out both; }
+
+@keyframes fb-tip-in { from { opacity:0; transform:translateY(3px); } }
+@keyframes fb-toast-in { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+@keyframes fb-drawer-in { from { transform:translateX(28px); opacity:0; } to { transform:none; opacity:1; } }
+@keyframes fb-fade-in { from { opacity:0; } to { opacity:1; } }
+@keyframes fb-chart-reveal { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+
+/* \u2500\u2500 reduced motion \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+   Every animation in the system is listed here. Motion is decoration on top of
+   states that already read without it, so the honest response to the OS setting
+   is to remove it entirely rather than shorten it. */
+@media (prefers-reduced-motion: reduce) {
+  .fb-dd, .fb-tipin, .fb-toast, .fb-drawer, .fb-scrim, .fb-chart-reveal { animation:none; }
+}
+`;
+function SystemStyle() {
+  return /* @__PURE__ */ jsx("style", { children: CSS });
+}
+var pushToast = null;
+function toast(title, opts) {
+  pushToast?.({ title, tone: opts?.tone ?? "muted", sub: opts?.sub });
+}
+function Toaster() {
+  const [items, setItems] = React7.useState([]);
+  React7.useEffect(() => {
+    let n = 0;
+    pushToast = (t) => {
+      const id = ++n;
+      setItems((xs) => [...xs.slice(-3), { ...t, id }]);
+      setTimeout(() => setItems((xs) => xs.filter((x) => x.id !== id)), 5e3);
+    };
+    return () => {
+      pushToast = null;
+    };
+  }, []);
+  if (!items.length) return null;
+  return /* @__PURE__ */ jsx("div", { className: "fb-toaster", role: "status", "aria-live": "polite", children: items.map((t) => /* @__PURE__ */ jsxs("div", { className: "fb-toast", children: [
+    /* @__PURE__ */ jsx("span", { className: "mt-1 h-2 w-2 shrink-0 rounded-full", style: { background: tone(t.tone).fg } }),
+    /* @__PURE__ */ jsxs("div", { className: "min-w-0 flex-1", children: [
+      /* @__PURE__ */ jsx("p", { className: "fb-toast-title", children: t.title }),
+      t.sub && /* @__PURE__ */ jsx("p", { className: "fb-toast-sub", children: t.sub })
+    ] }),
+    /* @__PURE__ */ jsx(
+      "button",
+      {
+        onClick: () => setItems((xs) => xs.filter((x) => x.id !== t.id)),
+        "aria-label": "Dismiss",
+        className: "fb-toast-x",
+        children: "\u2715"
+      }
+    )
+  ] }, t.id)) });
+}
+function TipLayer() {
+  const [tip, setTip] = React7.useState(null);
+  React7.useEffect(() => {
+    let anchor = null;
+    let timer;
+    const show = (el) => {
+      const text = el.getAttribute("data-tip");
+      if (!text) return;
+      const r = el.getBoundingClientRect();
+      const below = r.top < 76;
+      const x = Math.min(Math.max(r.left + r.width / 2, 148), window.innerWidth - 148);
+      setTip({ text, x, y: below ? r.bottom + 8 : r.top - 8, below });
+    };
+    const over = (e) => {
+      const el = e.target?.closest?.("[data-tip]") ?? null;
+      if (el === anchor) return;
+      anchor = el;
+      window.clearTimeout(timer);
+      if (el) timer = window.setTimeout(() => show(el), 120);
+      else setTip(null);
+    };
+    const hide = () => {
+      anchor = null;
+      window.clearTimeout(timer);
+      setTip(null);
+    };
+    document.addEventListener("mouseover", over);
+    document.addEventListener("scroll", hide, true);
+    document.addEventListener("mousedown", hide);
+    document.addEventListener("mouseleave", hide);
+    return () => {
+      document.removeEventListener("mouseover", over);
+      document.removeEventListener("scroll", hide, true);
+      document.removeEventListener("mousedown", hide);
+      document.removeEventListener("mouseleave", hide);
+      window.clearTimeout(timer);
+    };
+  }, []);
+  if (!tip) return null;
+  return /* @__PURE__ */ jsx(
+    "div",
+    {
+      className: "fb-tipbox",
+      role: "tooltip",
+      style: { left: tip.x, top: tip.y, transform: `translate(-50%, ${tip.below ? "0" : "-100%"})` },
+      children: /* @__PURE__ */ jsx("div", { className: "fb-tipin", children: tip.text })
+    }
+  );
+}
+function Def({ hint, children }) {
+  return /* @__PURE__ */ jsx("span", { className: "fb-def", "data-tip": hint, children });
+}
+function Skel({
+  w,
+  h = 12,
+  className = "",
+  style
+}) {
+  return /* @__PURE__ */ jsx(
+    "span",
+    {
+      "aria-hidden": true,
+      className: `block shrink-0 animate-pulse rounded ${className}`,
+      style: { width: w ?? "100%", height: h, background: WARM.chip, ...style }
+    }
+  );
+}
+function ChartSkel({ height = 220 }) {
+  const bars = [38, 52, 46, 60, 68, 55, 74, 63, 80, 70, 86, 78, 66];
+  return /* @__PURE__ */ jsx("div", { "aria-hidden": true, className: "flex items-end gap-2 px-4 pb-1", style: { height }, children: bars.map((h, i) => /* @__PURE__ */ jsx(
+    "span",
+    {
+      className: "flex-1 animate-pulse rounded-t",
+      style: { height: `${h}%`, background: WARM.chip, animationDelay: `${i * 70}ms` }
+    },
+    i
+  )) });
+}
+var TIP = { isAnimationActive: false, position: { y: 10 }, offset: 16 };
+var REDUCED = typeof window !== "undefined" && !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+function ChartTooltip({ title, rows }) {
+  return /* @__PURE__ */ jsxs(
+    "div",
+    {
+      className: "rounded-md px-2.5 py-2",
+      style: {
+        background: WARM.card,
+        border: `1px solid ${WARM.borderStrong}`,
+        boxShadow: "0 8px 24px rgba(0,0,0,0.08)"
+      },
+      children: [
+        title && /* @__PURE__ */ jsx("p", { className: "mb-1.5 text-[11px] font-medium uppercase tracking-wider", style: { color: WARM.faint }, children: title }),
+        /* @__PURE__ */ jsx("div", { className: "space-y-1", children: rows.map((r) => /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between gap-5 text-xs", children: [
+          /* @__PURE__ */ jsxs("span", { className: "flex items-center gap-1.5", style: { color: WARM.sub }, children: [
+            r.color && /* @__PURE__ */ jsx("span", { className: "h-2 w-2 rounded-[2px]", style: { background: r.color } }),
+            r.label
+          ] }),
+          /* @__PURE__ */ jsxs("span", { className: "font-medium tabular-nums", style: { color: WARM.ink }, children: [
+            r.value,
+            r.delta && /* @__PURE__ */ jsx(
+              "span",
+              {
+                className: "ml-1.5 rounded-full px-1.5 py-px text-[10px] font-semibold tabular-nums",
+                style: { color: r.delta.color, background: `${r.delta.color}1F` },
+                children: r.delta.text
+              }
+            )
+          ] })
+        ] }, r.label)) })
+      ]
+    }
+  );
+}
+function Copy({ text, label = "Copy" }) {
+  const [ok, setOk] = React7.useState(false);
+  return /* @__PURE__ */ jsx(
+    "button",
+    {
+      className: `fb-copy${ok ? " on" : ""}`,
+      title: ok ? "Copied" : label,
+      "aria-label": label,
+      onClick: async (e) => {
+        e.stopPropagation();
+        try {
+          await navigator.clipboard.writeText(text);
+          setOk(true);
+          setTimeout(() => setOk(false), 1500);
+        } catch {
+        }
+      },
+      children: ok ? /* @__PURE__ */ jsx(Check, { size: 11, weight: "bold" }) : /* @__PURE__ */ jsx(CopySimple, { size: 11 })
+    }
+  );
+}
+function MockTag({
+  label = "sample",
+  title = "Sample data \u2014 no live source yet"
+}) {
+  return /* @__PURE__ */ jsx(
+    "span",
+    {
+      className: "inline-flex items-center gap-1 rounded px-1 align-middle text-[9px] font-semibold uppercase leading-[14px] tracking-wide",
+      style: { border: `1px dashed ${WARM.faint}`, color: WARM.sub, background: "transparent" },
+      "data-tip": title,
+      children: label
+    }
+  );
+}
+
+// src/lib/ramp.ts
+var L_CURVE = [0.9704, 0.9311, 0.8694, 0.7797, 0.6995, 0.6609, 0.5803, 0.5001, 0.4209, 0.3509];
+var C_CURVE = [0.0169, 0.0334, 0.0553, 0.083, 0.0994, 0.1111, 0.111, 0.1045, 0.0887, 0.0741];
+var RAMP_STOPS = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900];
+var srgbToLinear = (c) => c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+var linearToSrgb = (c) => c <= 31308e-7 ? c * 12.92 : 1.055 * Math.pow(c, 1 / 2.4) - 0.055;
+function parseHex(hex) {
+  const h = hex.trim().replace(/^#/, "");
+  const full = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
+  if (!/^[0-9a-fA-F]{6}$/.test(full)) return null;
+  return [
+    parseInt(full.slice(0, 2), 16) / 255,
+    parseInt(full.slice(2, 4), 16) / 255,
+    parseInt(full.slice(4, 6), 16) / 255
+  ];
+}
+function hexToOklch(hex) {
+  const rgb = parseHex(hex);
+  if (!rgb) return null;
+  const [r, g, b] = rgb.map(srgbToLinear);
+  const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
+  const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
+  const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+  const L = 0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s;
+  const A = 1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s;
+  const B = 0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s;
+  const C = Math.sqrt(A * A + B * B);
+  let H = Math.atan2(B, A) * 180 / Math.PI;
+  if (H < 0) H += 360;
+  return { L, C, H };
+}
+function oklchToLinearRgb(L, C, H) {
+  const hRad = H * Math.PI / 180;
+  const A = C * Math.cos(hRad);
+  const B = C * Math.sin(hRad);
+  const l = (L + 0.3963377774 * A + 0.2158037573 * B) ** 3;
+  const m = (L - 0.1055613458 * A - 0.0638541728 * B) ** 3;
+  const s = (L - 0.0894841775 * A - 1.291485548 * B) ** 3;
+  return [
+    4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+    -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+    -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s
+  ];
+}
+var inGamut = ([r, g, b]) => r >= -1e-4 && r <= 1 + 1e-4 && g >= -1e-4 && g <= 1 + 1e-4 && b >= -1e-4 && b <= 1 + 1e-4;
+var toHex = (v) => Math.round(Math.min(1, Math.max(0, v)) * 255).toString(16).padStart(2, "0");
+function oklchToHex(L, C, H) {
+  let lo = 0;
+  let hi = C;
+  if (!inGamut(oklchToLinearRgb(L, C, H))) {
+    for (let i = 0; i < 24; i++) {
+      const mid = (lo + hi) / 2;
+      if (inGamut(oklchToLinearRgb(L, mid, H))) lo = mid;
+      else hi = mid;
+    }
+  } else {
+    lo = C;
+  }
+  const [r, g, b] = oklchToLinearRgb(L, lo, H).map(linearToSrgb);
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`.toUpperCase();
+}
+var FALLBACK_HUE = 77.54;
+var ACHROMATIC = 8e-3;
+function makeAccentRamp(brandHex) {
+  const src = hexToOklch(brandHex);
+  const hue = !src || src.C < ACHROMATIC ? FALLBACK_HUE : src.H;
+  const out = {};
+  RAMP_STOPS.forEach((stop, i) => {
+    out[stop] = oklchToHex(L_CURVE[i], C_CURVE[i], hue);
+  });
+  return out;
+}
+function accentRampTokens(brandHex) {
+  const ramp = makeAccentRamp(brandHex);
+  const tokens = {};
+  for (const stop of RAMP_STOPS) tokens[`--accent-${stop}`] = ramp[stop];
+  return tokens;
+}
+
+export { ACCENT, AXIS_TICK, AutoGrid, BAR_RADIUS, BAR_RADIUS_H, Badge, BarGradient, Btn, CHART_HEIGHT, CHART_MARGIN, CHART_MARGIN_COMPACT, CHART_SERIES, Card, ChartCard, ChartDataTable, ChartEmpty, ChartGradient, ChartSkel, ChartTooltip, Copy, CountUp, DataGridWrapper, Def, Delta, DetailDrawer, EmptyState, ExpandableRow, GRID, GridRow, KpiStrip, KpiTile, KpiVariantContext, MockTag, PageStack, PageTabList, PageTabTrigger, Pill, RAMP_STOPS, REDUCED, RankedListCard, SPACE, SectionLabel, SegContent, SegList, SegTabs, SegTrigger, Skel, Sparkline, SplitPane, Stagger, SystemStyle, TIP, TOOLTIP_STYLE, Td, Th, TipLayer, Toaster, WARM, WarmGrid, WarmLegend, WarmTable, WarmThead, WarmTooltip, WarmTr, WidgetContainer, accentRampTokens, activeDot, axisTick, barCursor, barValueLabel, categoryXAxis, categoryYAxis, chartTip, crosshairCursor, hexToOklch, makeAccentRamp, numberYAxis, oklchToHex, pressable, pressableSoft, referenceTarget, resetWarmCache, segItemClass, segTrackClass, seriesColor, timeXAxis, toast, tone };
 //# sourceMappingURL=index.js.map
 //# sourceMappingURL=index.js.map

@@ -44,14 +44,25 @@ export function ChartCard({
   children,
 }: ChartCardProps) {
   return (
-    <Card className={className}>
-      <div className="flex items-start justify-between" style={{ marginBottom: SPACE.headerGap }}>
+    // pad={0}: the header sits on its own ruled band rather than floating in the
+    // card's padding. The rule is the faint `border` — an internal divider, not an
+    // edge — so it separates header from body without competing with the card's
+    // own boundary. See the "edges define, dividers whisper" note on <Card>.
+    <Card className={className} pad={0}>
+      <div
+        className="flex items-start justify-between gap-3 px-4 py-3"
+        style={{ borderBottom: "1px solid var(--warm-border)" }}
+      >
         <div>
-          <div className="text-warm-ink font-bold" style={{ fontSize: 14.5, letterSpacing: "-0.01em" }}>{title}</div>
-          {subtitle && <div className="text-warm-sub" style={{ fontSize: 12, marginTop: 2 }}>{subtitle}</div>}
+          <div className="text-[13px] font-semibold text-warm-ink">{title}</div>
+          {subtitle && <div className="mt-0.5 text-xs text-warm-sub">{subtitle}</div>}
         </div>
         {right}
       </div>
+      {/* Body padding lives on the wrapper so `height` stays the CHART's height:
+          putting both on one element would silently shrink every chart by the
+          vertical padding (border-box), and callers size `height` to the plot. */}
+      <div className="px-1 py-3">
       <div
         style={{ height }}
         {...(ariaLabel && !loading && !empty ? { role: "img", "aria-label": ariaLabel } : {})}
@@ -83,6 +94,7 @@ export function ChartCard({
       {/* Sibling (not inside role="img") so screen readers can reach the table. */}
       {dataTable && !loading && !empty && dataTable}
       {legend && !loading && !empty && <div style={{ marginTop: 10 }}>{legend}</div>}
+      </div>
     </Card>
   );
 }

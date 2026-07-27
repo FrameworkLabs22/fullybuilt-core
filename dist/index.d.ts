@@ -31,9 +31,11 @@ declare function resetWarmCache(): void;
 declare const BASE: {
     readonly bg: "#F7F8FA";
     readonly card: "#FFFFFF";
+    /** Faintly-lifted surface for a panel sitting on top of a card. */
+    readonly cardRaised: "#FCFCFD";
     readonly ink: "#1C1E24";
-    readonly sub: "#6E727B";
-    readonly faint: "#A6ABB5";
+    readonly sub: "#3E424A";
+    readonly faint: "#6E727B";
     readonly border: "#E7E9EE";
     readonly borderStrong: "#D8DBE1";
     readonly chip: "#EEF0F3";
@@ -54,48 +56,68 @@ declare const BASE: {
     readonly warn: "#C77A1E";
     readonly warnSoft: "#FBF1E2";
     readonly danger: "#d94a36";
+    readonly dangerSoft: "#FCE7E6";
+    /** Overstock / cash-tied-up. Indigo sits at the same OKLCH brightness band as
+     *  `pos`/`danger`, so "too much stock" reads as a real state and not as the
+     *  gray of missing data. */
+    readonly excess: "#667DBC";
+    readonly excessSoft: "#EBF0FD";
+    /** Plan / baseline series in charts. A chart tone on purpose — deliberately NOT
+     *  tied to the text triad, so retuning body text can't shift a chart. */
+    readonly slate: "#6E727B";
 };
 /**
  * Warm palette. Neutral keys are literal; brand keys resolve per-client from CSS
  * vars at access time (so reads during render pick up the host app's index.css).
  */
 declare const WARM: { -readonly [K in keyof typeof BASE]: string; };
-/** Recharts axis tick style. (WARM.sub clears WCAG AA contrast on the light bg.) */
+declare const ACCENT_STOPS: readonly [50, 100, 200, 300, 400, 500, 600, 700, 800, 900];
+/** Accent ramp keyed by stop: `ACCENT[400]`. Resolves per client at access time. */
+declare const ACCENT: Record<(typeof ACCENT_STOPS)[number], string>;
+/**
+ * Recharts axis tick style. (WARM.faint clears WCAG AA contrast on the light bg.)
+ *
+ * The color is a GETTER, not a captured value. These objects are module-level
+ * consts, so a plain `fill: WARM.faint` would resolve once at import — before the
+ * stylesheet is applied and forever after, pinning every chart to the package's
+ * fallback neutrals and ignoring the client's tokens. A getter defers the read to
+ * the spread site, which happens during render.
+ */
 declare const axisTick: {
-    readonly fontSize: 11;
+    fontSize: number;
     readonly fill: string;
 };
-/** Recharts <Tooltip> props for a soft warm container. */
+/** Recharts <Tooltip> props for a soft warm container. Lazily resolved, as above. */
 declare const chartTip: {
-    readonly contentStyle: {
-        readonly fontSize: 12;
-        readonly borderRadius: 10;
-        readonly border: `1px solid ${string}`;
-        readonly background: "#fff";
+    contentStyle: {
+        fontSize: number;
+        borderRadius: number;
+        readonly border: string;
+        background: string;
     };
-    readonly cursor: {
+    cursor: {
         readonly fill: string;
-        readonly fillOpacity: 0.6;
+        fillOpacity: number;
     };
 };
 declare const CHART_SERIES: readonly string[];
 /** Pick a series color by index (cycles through the palette). */
 declare const seriesColor: (i: number) => string;
-/** Faint dashed grid. Spread onto <CartesianGrid {...GRID} />. */
+/** Faint dashed grid. Spread onto <CartesianGrid {...GRID} />. Lazily resolved. */
 declare const GRID: {
-    readonly strokeDasharray: "3 3";
+    strokeDasharray: string;
     readonly stroke: string;
 };
 /** UPPER_CASE aliases so charts can use one import style everywhere. */
 declare const AXIS_TICK: {
-    readonly fontSize: 11;
+    fontSize: number;
     readonly fill: string;
 };
 declare const TOOLTIP_STYLE: {
-    readonly fontSize: 12;
-    readonly borderRadius: 10;
-    readonly border: `1px solid ${string}`;
-    readonly background: "#fff";
+    fontSize: number;
+    borderRadius: number;
+    readonly border: string;
+    background: string;
 };
 
 interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -103,10 +125,31 @@ interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
     pad?: number;
     /** Lift slightly on hover (KPI tiles, clickable cards). */
     interactive?: boolean;
-    /** Depth in the elevation scale. `raised` for hero/featured surfaces. */
+    /**
+     * Depth. Defaults to `flat` — the system defines cards by their EDGE, not by a
+     * shadow. `raised` is the deliberate exception for a surface that genuinely
+     * floats above the page (drawers, popovers, hero panels).
+     *
+     * `card` is retained as an alias of `flat` so existing call sites keep working;
+     * it no longer paints a shadow.
+     */
     elevation?: "card" | "raised" | "flat";
 }
-/** Warm Editorial surface: white card, hairline border, soft shadow, 8px radius. */
+/**
+ * The system's surface.
+ *
+ * A white card on the page ground, separated by a hairline edge in
+ * `borderStrong` — no shadow. The rule the whole system follows:
+ *
+ *   **Edges define, dividers whisper.**
+ *
+ * The OUTER edge of a card uses `borderStrong` (#D8DBE1) so the card reads as a
+ * distinct object; dividers INSIDE a card use the fainter `border` (#E7E9EE) so
+ * they organize without carving it up. Shadows are reserved for things that
+ * actually float, which on a dashboard is almost nothing — a page of shadowed
+ * cards reads as clutter, and the depth stops meaning anything once everything
+ * has it.
+ */
 declare function Card({ pad, interactive, elevation, className, style, children, ...props }: CardProps): React.JSX.Element;
 
 /** Buttons / pills / small controls — 3% press. */
@@ -117,11 +160,35 @@ declare const pressableSoft = "transition-[transform,color,background-color,bord
 /** Uppercase eyebrow label (11px / 700 / faint). */
 declare function SectionLabel({ className, style, ...props }: React.HTMLAttributes<HTMLDivElement>): React.JSX.Element;
 
-type BadgeTone = "neutral" | "danger" | "warn" | "ok" | "accent";
-interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
+/**
+ * The system's state vocabulary. Five tones, each a foreground/background pair.
+ *
+ * `excess` exists because "too much" is a real state, not a neutral one — an
+ * overstocked SKU is cash sitting still, and rendering it in the gray reserved
+ * for missing data reads as "we don't know" rather than "this is a problem".
+ */
+type Tone = "pos" | "warn" | "neg" | "muted" | "excess";
+/** Resolve a tone to its `{ fg, bg }` pair. A function, not a const map, so each
+ *  read re-resolves the CSS vars — a const would freeze the first client's palette. */
+declare function tone(t: Tone): {
+    fg: string;
+    bg: string;
+};
+
+/**
+ * State badge — a leading dot, then the label.
+ *
+ * The dot carries the state; the tinted background is support, not the signal.
+ * That ordering matters twice over: a saturated dot reads at a glance in a dense
+ * table where a pale fill does not, and the state survives for anyone who cannot
+ * separate the tint from its neighbours.
+ */
+/** Legacy tone names, mapped onto the system's five-tone vocabulary. */
+type BadgeTone = "neutral" | "danger" | "warn" | "ok" | "accent" | Tone;
+interface BadgeProps extends Omit<React.HTMLAttributes<HTMLSpanElement>, "children"> {
     tone?: BadgeTone;
+    children: React.ReactNode;
 }
-/** Pill badge with semantic tones. */
 declare function Badge({ tone, className, children, style, ...props }: BadgeProps): React.JSX.Element;
 
 interface DeltaProps {
@@ -141,12 +208,27 @@ interface PillProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 /** Rounded toggle / filter pill (36px tall). Active = ink fill. */
 declare function Pill({ icon, active, className, children, ...props }: PillProps): React.JSX.Element;
 
-type Kind = "primary" | "ghost" | "dark";
+/**
+ * Action button.
+ *
+ * Rank is expressed by DARKNESS, not by hue: primary (ink) > secondary (muted
+ * fill) > ghost (bare text), with `danger` as an outlined destructive confirm.
+ *
+ * Darkness ranking survives rebranding — it reads correctly whether the tenant's
+ * primary is navy, near-black or red — where a hue-coded hierarchy ("blue means
+ * primary") collapses the moment a client's brand color IS the warning color.
+ *
+ * All visual states live in the system stylesheet (`<SystemStyle />`), so hover,
+ * focus and disabled are identical to every other control in the system.
+ */
+/** `dark` predates `primary` and pins the button to ink regardless of the tenant's
+ *  primary. Kept distinct rather than aliased: for a client whose primary is not
+ *  near-black, folding the two together would silently recolor existing buttons. */
+type Kind = "primary" | "secondary" | "ghost" | "danger" | "dark";
 interface BtnProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
     kind?: Kind;
     icon?: React.ReactNode;
 }
-/** Primary / ghost / dark action button (38px tall, fully rounded). */
 declare function Btn({ kind, icon, className, children, ...props }: BtnProps): React.JSX.Element;
 
 interface SparklineProps {
@@ -550,31 +632,49 @@ declare const Tabs: React.ForwardRefExoticComponent<TabsPrimitive.TabsProps & Re
 declare const TabsList: React.ForwardRefExoticComponent<Omit<TabsPrimitive.TabsListProps & React.RefAttributes<HTMLDivElement>, "ref"> & React.RefAttributes<HTMLDivElement>>;
 declare const TabsTrigger: React.ForwardRefExoticComponent<Omit<TabsPrimitive.TabsTriggerProps & React.RefAttributes<HTMLButtonElement>, "ref"> & React.RefAttributes<HTMLButtonElement>>;
 
-declare function SegTabs({ value, defaultValue, onValueChange, children, ...props }: React.ComponentPropsWithoutRef<typeof Tabs>): React.JSX.Element;
+/**
+ * Segmented control — styled wrappers around the shadcn/Radix Tabs base (which
+ * stays untouched). Composition API is unchanged: SegTabs > SegList > SegTrigger
+ * + SegContent.
+ *
+ * The active segment LIFTS in place; it does not slide. A sliding pill animates
+ * the control itself rather than the change it causes, and on a filter that
+ * re-renders a table underneath, the eye follows the pill instead of the data
+ * that just moved. Selection is instant; the content it drives is the thing worth
+ * watching.
+ */
+declare function SegTabs(props: React.ComponentPropsWithoutRef<typeof Tabs>): React.JSX.Element;
 declare const SegList: React.ForwardRefExoticComponent<Omit<Omit<TabsPrimitive.TabsListProps & React.RefAttributes<HTMLDivElement>, "ref"> & React.RefAttributes<HTMLDivElement>, "ref"> & React.RefAttributes<HTMLDivElement>>;
 declare const SegTrigger: React.ForwardRefExoticComponent<Omit<Omit<TabsPrimitive.TabsTriggerProps & React.RefAttributes<HTMLButtonElement>, "ref"> & React.RefAttributes<HTMLButtonElement>, "ref"> & React.RefAttributes<HTMLButtonElement>>;
 declare const SegContent: React.ForwardRefExoticComponent<Omit<TabsPrimitive.TabsContentProps & React.RefAttributes<HTMLDivElement>, "ref"> & React.RefAttributes<HTMLDivElement>>;
 /**
- * Class strings for styling other Radix triggers (e.g. ToggleGroupItem) to
- * match the segmented look without wrapping them. (CSS-only — no sliding pill.)
+ * Class strings for styling other Radix triggers (e.g. ToggleGroupItem) to match
+ * the segmented look without wrapping them. ToggleGroup reports selection as
+ * `data-state="on"`, which the shared `[data-state=active]` rule does not match,
+ * so the active treatment is spelled out here.
  */
-declare const segTrackClass = "gap-0.5 rounded-pill bg-warm-chip p-1";
+declare const segTrackClass = "fb-seg-track";
 declare const segItemClass: string;
 
 /**
- * Page-level tab bar — bigger sibling of Seg for switching whole page views.
- * White elevated track, icon + label triggers, and the sidebar's animated
- * active pill (spring layoutId) sliding between tabs. Requires the parent to
- * control the Tabs value so triggers know they're active (Radix state isn't
- * visible to React for the motion pill).
+ * Page-level tab bar — for switching whole page views.
+ *
+ * An underline bar sitting on a hairline rule, not a floating pill track. Tabs
+ * label the content directly beneath them, and the shared rule is what ties the
+ * label to the region it names; a detached pill reads as a control that happens
+ * to be nearby.
+ *
+ * The `active` prop is retained for API compatibility but is no longer needed —
+ * the active treatment comes from Radix's own `data-state`, so the parent cannot
+ * get out of sync with it.
  */
 declare function PageTabList({ className, children, ...props }: React.ComponentPropsWithoutRef<typeof TabsList>): React.JSX.Element;
 interface PageTabTriggerProps extends React.ComponentPropsWithoutRef<typeof TabsTrigger> {
-    /** Whether this tab is the active one (parent controls the Tabs value). */
-    active: boolean;
+    /** @deprecated Active state now comes from Radix `data-state`; this is ignored. */
+    active?: boolean;
     icon?: React.ReactNode;
 }
-declare function PageTabTrigger({ active, icon, className, children, ...props }: PageTabTriggerProps): React.JSX.Element;
+declare function PageTabTrigger({ active: _active, icon, className, children, ...props }: PageTabTriggerProps): React.JSX.Element;
 
 interface CountUpProps {
     value: number;
@@ -756,4 +856,192 @@ interface DetailDrawerProps {
  */
 declare function DetailDrawer({ open, onOpenChange, title, description, width, footer, children, }: DetailDrawerProps): React.JSX.Element;
 
-export { AXIS_TICK, AutoGrid, BAR_RADIUS, BAR_RADIUS_H, Badge, type BadgeTone, BarGradient, Btn, CHART_HEIGHT, CHART_MARGIN, CHART_MARGIN_COMPACT, CHART_SERIES, Card, ChartCard, ChartDataTable, type ChartDataTableColumn, type ChartDataTableProps, ChartEmpty, type ChartEmptyProps, ChartGradient, CountUp, DataGridWrapper, Delta, DetailDrawer, EmptyState, ExpandableRow, GRID, GridRow, KpiStrip, KpiTile, KpiVariantContext, PageStack, PageTabList, PageTabTrigger, Pill, type RankedItem, RankedListCard, SPACE, SectionLabel, SegContent, SegList, SegTabs, SegTrigger, Sparkline, SplitPane, Stagger, TOOLTIP_STYLE, Td, Th, WARM, WarmGrid, WarmLegend, type WarmLegendItem, type WarmLegendProps, WarmTable, WarmThead, WarmTooltip, type WarmTooltipItem, type WarmTooltipProps, WarmTr, WidgetContainer, activeDot, axisTick, barCursor, barValueLabel, categoryXAxis, categoryYAxis, chartTip, crosshairCursor, numberYAxis, pressable, pressableSoft, referenceTarget, resetWarmCache, segItemClass, segTrackClass, seriesColor, timeXAxis };
+/** Mount once per page that uses the design system. */
+declare function SystemStyle(): React.JSX.Element;
+
+/** Show a toast. No-ops when no <Toaster /> is mounted. */
+declare function toast(title: string, opts?: {
+    tone?: Tone;
+    sub?: string;
+}): void;
+/** Fixed bottom-right toast stack. Mount once, alongside <TipLayer />. */
+declare function Toaster(): React.JSX.Element | null;
+
+/**
+ * Tooltip layer for every `[data-tip]` element on the page.
+ *
+ * One delegated listener rather than per-element state, and the box renders
+ * `position: fixed` so an `overflow-x-auto` table wrapper cannot clip it — the
+ * failure mode that makes per-element tooltips useless inside data grids.
+ *
+ * Anything can carry a tip by adding `data-tip="…"`; no wrapper component and no
+ * import required at the call site. Use <Def> when the tip defines a term and the
+ * label should advertise that it is defined.
+ *
+ * Mount <TipLayer /> ONCE per page, alongside <Toaster />.
+ */
+declare function TipLayer(): React.JSX.Element | null;
+/**
+ * A defined term: dotted underline plus the definition on hover. Use for jargon
+ * and for metrics whose calculation is not obvious from the label.
+ */
+declare function Def({ hint, children }: {
+    hint: string;
+    children: React.ReactNode;
+}): React.JSX.Element;
+
+/**
+ * Loading placeholders.
+ *
+ * Two rules the whole system follows:
+ *
+ * 1. **Show blocks, never zeros.** A "0" in a KPI slot reads as data — the user
+ *    believes they sold nothing, and finds out otherwise a second later. A block
+ *    reads as "not yet".
+ * 2. **Size the block to the content it stands in for**, so nothing reflows when
+ *    the data lands. A placeholder that jumps on resolve is worse than no
+ *    placeholder.
+ *
+ * Solid fill plus opacity pulse — no gradient shimmer.
+ */
+declare function Skel({ w, h, className, style, }: {
+    /** Width; defaults to filling the container. */
+    w?: number | string;
+    h?: number | string;
+    className?: string;
+    style?: React.CSSProperties;
+}): React.JSX.Element;
+/**
+ * Chart-shaped placeholder — a ghost bar chart at the height of the chart it
+ * replaces, with a staggered pulse so it reads as one loading object rather than
+ * a row of unrelated blocks.
+ */
+declare function ChartSkel({ height }: {
+    height?: number;
+}): React.JSX.Element;
+
+/**
+ * Shared element props for every chart <Tooltip>.
+ *
+ * Recharts eases tooltip position over 400ms by default, which makes the tip
+ * rubber-band along behind the cursor and feel broken on a dense axis. Disabling
+ * the animation and pinning the tip near the top of the plot leaves it sliding
+ * horizontally band to band, which tracks the cursor honestly.
+ *
+ * Spread it: `<Tooltip {...TIP} content={<ChartTooltip … />} />`.
+ */
+declare const TIP: {
+    readonly isAnimationActive: false;
+    readonly position: {
+        readonly y: 10;
+    };
+    readonly offset: 16;
+};
+/** True when the OS asks for reduced motion — gates chart reveals and morphs
+ *  that CSS alone cannot reach (JS-driven animation, staged mounts). */
+declare const REDUCED: boolean;
+interface ChartTooltipRow {
+    label: string;
+    value: string;
+    /** Series swatch. Omit for rows that are not a series (totals, deltas). */
+    color?: string;
+    delta?: {
+        text: string;
+        color: string;
+    };
+}
+/**
+ * Chart tooltip body: a titled list of label/value rows with series swatches and
+ * optional delta chips. Values are tabular-figure aligned so they compare down
+ * the column instead of jittering as digits change.
+ */
+declare function ChartTooltip({ title, rows }: {
+    title?: string;
+    rows: ChartTooltipRow[];
+}): React.JSX.Element;
+
+/**
+ * Hover-revealed copy button. Invisible until its host `.fb-row` is hovered or it
+ * receives keyboard focus — the affordance is there when wanted and silent
+ * otherwise, which matters in a table where every row would otherwise carry one.
+ *
+ * Confirms in place (check, 1.5s) rather than firing a toast: the user is looking
+ * at the thing they clicked, and a notification for a copy is noise.
+ */
+declare function Copy({ text, label }: {
+    text: string;
+    label?: string;
+}): React.JSX.Element;
+
+/**
+ * Data-provenance tag — a small dashed pill marking a sample, estimated or
+ * placeholder value.
+ *
+ * Deliberately GRAY and deliberately dashed. Amber and red are the page's urgency
+ * vocabulary ("order soon", "stocked out"); provenance is not urgency, and
+ * borrowing an urgency color to mean "we made this number up" trains people to
+ * discount the colors that matter. The dashed border says "not solid" without
+ * competing for attention.
+ */
+declare function MockTag({ label, title, }: {
+    label?: string;
+    title?: string;
+}): React.JSX.Element;
+
+/**
+ * OKLCH accent-ramp generator.
+ *
+ * The design system has two color layers. Layer 1 is the neutral foundation
+ * (surfaces, borders, the text triad) — shared by every client. Layer 2 is a
+ * single functional accent used ONLY for interaction affordances: focus rings,
+ * input focus glow, slider thumbs. Never for surfaces, never for chart series.
+ *
+ * That accent ships as a 10-step ramp. The ramp originated as the Osmo Planning
+ * module's hand-tuned "gold" (hue 77.5°); this module generalizes it so every
+ * client gets the same ramp shape in their own hue.
+ *
+ * WHY THE L AND C CURVES ARE FIXED (and only the hue comes from the client):
+ * the ramp is functional, not decorative. A focus ring must carry the same visual
+ * weight on every dashboard — if we scaled chroma to each brand's own saturation,
+ * a muted brand (e.g. a near-gray navy) would produce an accent so desaturated the
+ * focus ring would be invisible, and a vivid brand would shout. Holding lightness
+ * and chroma constant and varying only hue keeps affordance strength identical
+ * across tenants while still reading as the brand's color family. Brand identity
+ * proper lives in `primary`, the surfaces, and the chart series — not here.
+ *
+ * Sanity check when changing the curves: feeding this the original gold
+ * (#B8893A) must reproduce the hand-tuned ramp. It currently matches 8 of the 10
+ * stops exactly, with the two darkest off by OKLab ΔE 0.0034 — imperceptible, and
+ * caused by those two hexes having been hand-picked slightly off the ramp's hue.
+ */
+declare const RAMP_STOPS: readonly [50, 100, 200, 300, 400, 500, 600, 700, 800, 900];
+type RampStop = (typeof RAMP_STOPS)[number];
+type AccentRamp = Record<RampStop, string>;
+/** sRGB hex → OKLCH. Null when the input isn't a hex color. */
+declare function hexToOklch(hex: string): {
+    L: number;
+    C: number;
+    H: number;
+} | null;
+/**
+ * OKLCH → sRGB hex, reducing chroma until the color fits the sRGB gamut. Keeps
+ * lightness and hue exact (the two things the ramp's rhythm depends on) and gives
+ * up only saturation, which is what gamut mapping should trade away.
+ */
+declare function oklchToHex(L: number, C: number, H: number): string;
+/**
+ * Build the 10-step interaction ramp for a brand color.
+ *
+ * Only the hue is taken from `brandHex`; lightness and chroma follow the fixed
+ * curves (see the module header for why). An achromatic or unparseable brand
+ * color falls back to the original gold hue rather than producing a gray ramp
+ * that can't signal focus.
+ */
+declare function makeAccentRamp(brandHex: string): AccentRamp;
+/**
+ * The ramp as CSS custom properties (`--accent-50` … `--accent-900`), ready to
+ * merge into a client's `branding` token map and inject on `:root`.
+ */
+declare function accentRampTokens(brandHex: string): Record<string, string>;
+
+export { ACCENT, AXIS_TICK, type AccentRamp, AutoGrid, BAR_RADIUS, BAR_RADIUS_H, Badge, type BadgeTone, BarGradient, Btn, CHART_HEIGHT, CHART_MARGIN, CHART_MARGIN_COMPACT, CHART_SERIES, Card, ChartCard, ChartDataTable, type ChartDataTableColumn, type ChartDataTableProps, ChartEmpty, type ChartEmptyProps, ChartGradient, ChartSkel, ChartTooltip, type ChartTooltipRow, Copy, CountUp, DataGridWrapper, Def, Delta, DetailDrawer, EmptyState, ExpandableRow, GRID, GridRow, KpiStrip, KpiTile, KpiVariantContext, MockTag, PageStack, PageTabList, PageTabTrigger, Pill, RAMP_STOPS, REDUCED, type RampStop, type RankedItem, RankedListCard, SPACE, SectionLabel, SegContent, SegList, SegTabs, SegTrigger, Skel, Sparkline, SplitPane, Stagger, SystemStyle, TIP, TOOLTIP_STYLE, Td, Th, TipLayer, Toaster, type Tone, WARM, WarmGrid, WarmLegend, type WarmLegendItem, type WarmLegendProps, WarmTable, WarmThead, WarmTooltip, type WarmTooltipItem, type WarmTooltipProps, WarmTr, WidgetContainer, accentRampTokens, activeDot, axisTick, barCursor, barValueLabel, categoryXAxis, categoryYAxis, chartTip, crosshairCursor, hexToOklch, makeAccentRamp, numberYAxis, oklchToHex, pressable, pressableSoft, referenceTarget, resetWarmCache, segItemClass, segTrackClass, seriesColor, timeXAxis, toast, tone };

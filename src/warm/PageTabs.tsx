@@ -1,21 +1,24 @@
 import * as React from "react";
-import { motion, useReducedMotion } from "framer-motion";
 import { TabsList, TabsTrigger } from "../ui/tabs";
-import { SPRING } from "../lib/motion";
 import { cn } from "../lib/utils";
 
 /**
- * Page-level tab bar — bigger sibling of Seg for switching whole page views.
- * White elevated track, icon + label triggers, and the sidebar's animated
- * active pill (spring layoutId) sliding between tabs. Requires the parent to
- * control the Tabs value so triggers know they're active (Radix state isn't
- * visible to React for the motion pill).
+ * Page-level tab bar — for switching whole page views.
+ *
+ * An underline bar sitting on a hairline rule, not a floating pill track. Tabs
+ * label the content directly beneath them, and the shared rule is what ties the
+ * label to the region it names; a detached pill reads as a control that happens
+ * to be nearby.
+ *
+ * The `active` prop is retained for API compatibility but is no longer needed —
+ * the active treatment comes from Radix's own `data-state`, so the parent cannot
+ * get out of sync with it.
  */
 export function PageTabList({ className, children, ...props }: React.ComponentPropsWithoutRef<typeof TabsList>) {
   return (
     <TabsList
       className={cn(
-        "h-auto w-fit gap-1 rounded-pill border border-warm-border bg-white p-1.5 shadow-card",
+        "h-auto w-full justify-start gap-5 rounded-none border-0 border-b border-warm-border bg-transparent p-0",
         className,
       )}
       {...props}
@@ -26,33 +29,23 @@ export function PageTabList({ className, children, ...props }: React.ComponentPr
 }
 
 interface PageTabTriggerProps extends React.ComponentPropsWithoutRef<typeof TabsTrigger> {
-  /** Whether this tab is the active one (parent controls the Tabs value). */
-  active: boolean;
+  /** @deprecated Active state now comes from Radix `data-state`; this is ignored. */
+  active?: boolean;
   icon?: React.ReactNode;
 }
 
-export function PageTabTrigger({ active, icon, className, children, ...props }: PageTabTriggerProps) {
-  const reduced = useReducedMotion() ?? false;
+export function PageTabTrigger({ active: _active, icon, className, children, ...props }: PageTabTriggerProps) {
   return (
     <TabsTrigger
       className={cn(
-        "relative rounded-pill px-5 py-2 text-body-sm font-semibold text-warm-sub transition-colors",
-        "hover:text-warm-ink data-[state=active]:font-bold data-[state=active]:text-brand-red",
-        "data-[state=active]:bg-transparent data-[state=active]:shadow-none",
+        "fb-tab -mb-px flex items-center gap-2 rounded-none border-0 border-b-2 bg-transparent px-0 pb-2.5 pt-1",
+        "text-[13px] font-medium shadow-none transition-colors data-[state=active]:shadow-none",
         className,
       )}
       {...props}
     >
-      {active && (
-        <motion.span
-          layoutId={reduced ? undefined : "page-tab-pill"}
-          transition={SPRING}
-          className="absolute inset-0 rounded-pill bg-warm-primary-soft"
-          aria-hidden
-        />
-      )}
-      {icon && <span className="relative mr-1.5 inline-flex">{icon}</span>}
-      <span className="relative">{children}</span>
+      {icon && <span className="inline-flex">{icon}</span>}
+      {children}
     </TabsTrigger>
   );
 }
