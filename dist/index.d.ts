@@ -926,7 +926,14 @@ declare function Hint({ error, className, ...props }: React.HTMLAttributes<HTMLS
  * `error`. Driving the visual off the ARIA attribute rather than a `variant`
  * prop means a control cannot look wrong while telling a screen reader it is
  * fine, or the reverse.
+ *
+ * The box — width, padding, text size — is applied HERE as utilities rather than
+ * in `.fb-inp`, so `cn()` can dedupe it against whatever the call site passes.
+ * SystemStyle renders in the body and would otherwise beat a call site's
+ * `w-[180px]` or `text-xs` on document order alone.
  */
+/** The box every control in the system shares. Overridable at the call site. */
+declare const FIELD_BOX = "w-full px-2.5 py-1.5 text-[12.5px] leading-[18px]";
 declare const Input: React.ForwardRefExoticComponent<React.InputHTMLAttributes<HTMLInputElement> & React.RefAttributes<HTMLInputElement>>;
 declare const Textarea: React.ForwardRefExoticComponent<React.TextareaHTMLAttributes<HTMLTextAreaElement> & React.RefAttributes<HTMLTextAreaElement>>;
 
@@ -1221,4 +1228,4 @@ declare function makeAccentRamp(brandHex: string): AccentRamp;
  */
 declare function accentRampTokens(brandHex: string): Record<string, string>;
 
-export { ACCENT, AXIS_TICK, type AccentRamp, AutoGrid, BAR_RADIUS, BAR_RADIUS_H, Badge, type BadgeTone, BarGradient, Btn, CHART_HEIGHT, CHART_MARGIN, CHART_MARGIN_COMPACT, CHART_SERIES, Card, ChartCard, ChartDataTable, type ChartDataTableColumn, type ChartDataTableProps, ChartEmpty, type ChartEmptyProps, ChartGradient, ChartSkel, ChartTooltip, type ChartTooltipRow, Checkbox, Copy, CountUp, DataGridWrapper, Def, Delta, DetailDrawer, EmptyState, ExpandableRow, Field, type FieldControlProps, GRID, GridRow, Hint, Input, KpiStrip, KpiTile, KpiVariantContext, Label, MockTag, Modal, PageStack, PageTabList, PageTabTrigger, Pill, RAMP_STOPS, REDUCED, Radio, type RampStop, type RankedItem, RankedListCard, SPACE, SectionLabel, SegContent, SegList, SegTabs, SegTrigger, Select, type SelectOption, Skel, Sparkline, SplitPane, Stagger, Switch, SystemStyle, TIP, TOOLTIP_STYLE, Td, Textarea, Th, TipLayer, Toaster, type Tone, WARM, WarmGrid, WarmLegend, type WarmLegendItem, type WarmLegendProps, WarmTable, WarmThead, WarmTooltip, type WarmTooltipItem, type WarmTooltipProps, WarmTr, WidgetContainer, accentRampTokens, activeDot, axisTick, barCursor, barValueLabel, categoryXAxis, categoryYAxis, chartTip, crosshairCursor, hexToOklch, makeAccentRamp, numberYAxis, oklchToHex, pressable, pressableSoft, referenceTarget, resetWarmCache, segItemClass, segTrackClass, seriesColor, timeXAxis, toast, tone };
+export { ACCENT, AXIS_TICK, type AccentRamp, AutoGrid, BAR_RADIUS, BAR_RADIUS_H, Badge, type BadgeTone, BarGradient, Btn, CHART_HEIGHT, CHART_MARGIN, CHART_MARGIN_COMPACT, CHART_SERIES, Card, ChartCard, ChartDataTable, type ChartDataTableColumn, type ChartDataTableProps, ChartEmpty, type ChartEmptyProps, ChartGradient, ChartSkel, ChartTooltip, type ChartTooltipRow, Checkbox, Copy, CountUp, DataGridWrapper, Def, Delta, DetailDrawer, EmptyState, ExpandableRow, FIELD_BOX, Field, type FieldControlProps, GRID, GridRow, Hint, Input, KpiStrip, KpiTile, KpiVariantContext, Label, MockTag, Modal, PageStack, PageTabList, PageTabTrigger, Pill, RAMP_STOPS, REDUCED, Radio, type RampStop, type RankedItem, RankedListCard, SPACE, SectionLabel, SegContent, SegList, SegTabs, SegTrigger, Select, type SelectOption, Skel, Sparkline, SplitPane, Stagger, Switch, SystemStyle, TIP, TOOLTIP_STYLE, Td, Textarea, Th, TipLayer, Toaster, type Tone, WARM, WarmGrid, WarmLegend, type WarmLegendItem, type WarmLegendProps, WarmTable, WarmThead, WarmTooltip, type WarmTooltipItem, type WarmTooltipProps, WarmTr, WidgetContainer, accentRampTokens, activeDot, axisTick, barCursor, barValueLabel, categoryXAxis, categoryYAxis, chartTip, crosshairCursor, hexToOklch, makeAccentRamp, numberYAxis, oklchToHex, pressable, pressableSoft, referenceTarget, resetWarmCache, segItemClass, segTrackClass, seriesColor, timeXAxis, toast, tone };

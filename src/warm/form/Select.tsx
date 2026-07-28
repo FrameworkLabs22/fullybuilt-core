@@ -1,6 +1,7 @@
 import * as React from "react";
 import { CaretDown } from "@phosphor-icons/react";
 import { cn } from "../../lib/utils";
+import { FIELD_BOX } from "./Input";
 
 /**
  * Single-choice select, built on the native `<select>`.
@@ -41,7 +42,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(function 
 ) {
   return (
     <span className="fb-selwrap">
-      <select ref={ref} className={cn("fb-inp", className)} {...props}>
+      <select ref={ref} className={cn("fb-inp", FIELD_BOX, "pr-[26px]", className)} {...props}>
         {placeholder && <option value="">{placeholder}</option>}
         {children ??
           options?.map((o) => (

@@ -59,5 +59,5 @@ export { SplitPane } from "./SplitPane";
 export { DataGridWrapper, ExpandableRow } from "./DataGridWrapper";
 export { DetailDrawer } from "./DetailDrawer";
 // The form layer — labelled controls, choices and the blocking overlay.
-export { Field, Label, Hint, Input, Textarea, Select, Checkbox, Radio, Switch, Modal } from "./form";
+export { Field, Label, Hint, Input, Textarea, FIELD_BOX, Select, Checkbox, Radio, Switch, Modal } from "./form";
 export type { FieldControlProps, SelectOption } from "./form";

@@ -1242,17 +1242,18 @@ function Hint({
 }) {
   return /* @__PURE__ */ jsx("span", { className: cn("fb-hint", error && "fb-hint--err", className), ...props });
 }
+var FIELD_BOX = "w-full px-2.5 py-1.5 text-[12.5px] leading-[18px]";
 var Input = React7.forwardRef(
   function Input2({ className, type = "text", ...props }, ref) {
-    return /* @__PURE__ */ jsx("input", { ref, type, className: cn("fb-inp", className), ...props });
+    return /* @__PURE__ */ jsx("input", { ref, type, className: cn("fb-inp", FIELD_BOX, className), ...props });
   }
 );
 var Textarea = React7.forwardRef(function Textarea2({ className, rows = 3, ...props }, ref) {
-  return /* @__PURE__ */ jsx("textarea", { ref, rows, className: cn("fb-inp", className), ...props });
+  return /* @__PURE__ */ jsx("textarea", { ref, rows, className: cn("fb-inp", FIELD_BOX, "min-h-16", className), ...props });
 });
 var Select = React7.forwardRef(function Select2({ options, placeholder, className, children, ...props }, ref) {
   return /* @__PURE__ */ jsxs("span", { className: "fb-selwrap", children: [
-    /* @__PURE__ */ jsxs("select", { ref, className: cn("fb-inp", className), ...props, children: [
+    /* @__PURE__ */ jsxs("select", { ref, className: cn("fb-inp", FIELD_BOX, "pr-[26px]", className), ...props, children: [
       placeholder && /* @__PURE__ */ jsx("option", { value: "", children: placeholder }),
       children ?? options?.map((o) => /* @__PURE__ */ jsx("option", { value: o.value, disabled: o.disabled, children: o.label }, o.value))
     ] }),
@@ -1397,17 +1398,22 @@ var CSS = `
 .fb-hint { font-size:11px; line-height:1.45; color:var(--warm-faint); }
 .fb-hint--err { color:var(--warm-danger); }
 
-.fb-inp { width:100%; border:1px solid var(--warm-border); background:var(--warm-card); color:var(--warm-ink);
-  border-radius:6px; padding:6px 10px; font-family:inherit; font-size:12.5px; line-height:18px;
-  transition: border-color .12s, box-shadow .12s; }
+/* .fb-inp carries only what a utility CANNOT express \u2014 the states. The BOX
+   (width, padding, font-size) deliberately lives on the component as Tailwind
+   classes instead, because this stylesheet is in the body and would beat any
+   utility a call site passes for the same property. A control asked to be
+   w-[180px] would have come out full-width, and the diff would have looked
+   innocent. See "Traps that have already cost us". */
+.fb-inp { border:1px solid var(--warm-border); background:var(--warm-card); color:var(--warm-ink);
+  border-radius:6px; font-family:inherit; transition: border-color .12s, box-shadow .12s; }
 .fb-inp::placeholder { color:var(--warm-faint); }
 .fb-inp:hover:not(:disabled):not([aria-invalid="true"]) { border-color:var(--warm-border-strong); }
 .fb-inp:focus { outline:none; border-color:var(--accent-600); box-shadow:0 0 0 3px var(--accent-100); }
 .fb-inp:disabled { background:var(--warm-chip); color:var(--warm-faint); cursor:default; }
 .fb-inp[aria-invalid="true"] { border-color:var(--warm-danger); }
 .fb-inp[aria-invalid="true"]:focus { border-color:var(--warm-danger); box-shadow:0 0 0 3px var(--warm-danger-soft); }
-textarea.fb-inp { min-height:64px; resize:vertical; }
-select.fb-inp { appearance:none; -webkit-appearance:none; cursor:pointer; padding-right:26px; }
+textarea.fb-inp { resize:vertical; }
+select.fb-inp { appearance:none; -webkit-appearance:none; cursor:pointer; }
 /* The caret is a sibling element, not a background-image data URI: a data URI
    cannot read var(--warm-faint), so an inlined SVG would be the one neutral in
    the system that ignores a client's token overrides. */
@@ -1827,6 +1833,6 @@ function accentRampTokens(brandHex) {
   return tokens;
 }
 
-export { ACCENT, AXIS_TICK, AutoGrid, BAR_RADIUS, BAR_RADIUS_H, Badge, BarGradient, Btn, CHART_HEIGHT, CHART_MARGIN, CHART_MARGIN_COMPACT, CHART_SERIES, Card, ChartCard, ChartDataTable, ChartEmpty, ChartGradient, ChartSkel, ChartTooltip, Checkbox, Copy, CountUp, DataGridWrapper, Def, Delta, DetailDrawer, EmptyState, ExpandableRow, Field, GRID, GridRow, Hint, Input, KpiStrip, KpiTile, KpiVariantContext, Label, MockTag, Modal, PageStack, PageTabList, PageTabTrigger, Pill, RAMP_STOPS, REDUCED, Radio, RankedListCard, SPACE, SectionLabel, SegContent, SegList, SegTabs, SegTrigger, Select, Skel, Sparkline, SplitPane, Stagger, Switch, SystemStyle, TIP, TOOLTIP_STYLE, Td, Textarea, Th, TipLayer, Toaster, WARM, WarmGrid, WarmLegend, WarmTable, WarmThead, WarmTooltip, WarmTr, WidgetContainer, accentRampTokens, activeDot, axisTick, barCursor, barValueLabel, categoryXAxis, categoryYAxis, chartTip, crosshairCursor, hexToOklch, makeAccentRamp, numberYAxis, oklchToHex, pressable, pressableSoft, referenceTarget, resetWarmCache, segItemClass, segTrackClass, seriesColor, timeXAxis, toast, tone };
+export { ACCENT, AXIS_TICK, AutoGrid, BAR_RADIUS, BAR_RADIUS_H, Badge, BarGradient, Btn, CHART_HEIGHT, CHART_MARGIN, CHART_MARGIN_COMPACT, CHART_SERIES, Card, ChartCard, ChartDataTable, ChartEmpty, ChartGradient, ChartSkel, ChartTooltip, Checkbox, Copy, CountUp, DataGridWrapper, Def, Delta, DetailDrawer, EmptyState, ExpandableRow, FIELD_BOX, Field, GRID, GridRow, Hint, Input, KpiStrip, KpiTile, KpiVariantContext, Label, MockTag, Modal, PageStack, PageTabList, PageTabTrigger, Pill, RAMP_STOPS, REDUCED, Radio, RankedListCard, SPACE, SectionLabel, SegContent, SegList, SegTabs, SegTrigger, Select, Skel, Sparkline, SplitPane, Stagger, Switch, SystemStyle, TIP, TOOLTIP_STYLE, Td, Textarea, Th, TipLayer, Toaster, WARM, WarmGrid, WarmLegend, WarmTable, WarmThead, WarmTooltip, WarmTr, WidgetContainer, accentRampTokens, activeDot, axisTick, barCursor, barValueLabel, categoryXAxis, categoryYAxis, chartTip, crosshairCursor, hexToOklch, makeAccentRamp, numberYAxis, oklchToHex, pressable, pressableSoft, referenceTarget, resetWarmCache, segItemClass, segTrackClass, seriesColor, timeXAxis, toast, tone };
 //# sourceMappingURL=index.js.map
 //# sourceMappingURL=index.js.map

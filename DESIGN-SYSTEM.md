@@ -246,6 +246,15 @@ and exposes them wherever it does not (`.fb-tab` declares no background). Never
 rely on it — and never add a property to an existing `.fb-*` class that call sites
 are already overriding with utilities.
 
+The corollary is a rule about where a property goes: **`.fb-*` classes carry
+STATES; components carry the BOX.** Borders, hovers, focus rings and invalid
+treatments belong in the stylesheet, because a utility cannot express them. Width,
+padding and font-size belong on the component as Tailwind classes, because `cn()`
+can dedupe those against the call site and the stylesheet cannot. v0.4.0 shipped
+`width:100%` inside `.fb-inp`; it silently made every `w-[180px]` filter dropdown
+full-width, and the diff that caused it looked like a restyle. Fixed in v0.4.1 by
+moving the box onto `FIELD_BOX`.
+
 **A renamed prop compiles and renders.** React silently drops unknown props, so an
 aliased component falls back to its default variant with no error anywhere. This
 cost ~17 buttons their hierarchy before someone noticed by eye.

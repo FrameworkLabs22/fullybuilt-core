@@ -15,11 +15,19 @@ import { cn } from "../../lib/utils";
  * `error`. Driving the visual off the ARIA attribute rather than a `variant`
  * prop means a control cannot look wrong while telling a screen reader it is
  * fine, or the reverse.
+ *
+ * The box — width, padding, text size — is applied HERE as utilities rather than
+ * in `.fb-inp`, so `cn()` can dedupe it against whatever the call site passes.
+ * SystemStyle renders in the body and would otherwise beat a call site's
+ * `w-[180px]` or `text-xs` on document order alone.
  */
+
+/** The box every control in the system shares. Overridable at the call site. */
+export const FIELD_BOX = "w-full px-2.5 py-1.5 text-[12.5px] leading-[18px]";
 
 export const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(
   function Input({ className, type = "text", ...props }, ref) {
-    return <input ref={ref} type={type} className={cn("fb-inp", className)} {...props} />;
+    return <input ref={ref} type={type} className={cn("fb-inp", FIELD_BOX, className)} {...props} />;
   },
 );
 
@@ -27,5 +35,7 @@ export const Textarea = React.forwardRef<
   HTMLTextAreaElement,
   React.TextareaHTMLAttributes<HTMLTextAreaElement>
 >(function Textarea({ className, rows = 3, ...props }, ref) {
-  return <textarea ref={ref} rows={rows} className={cn("fb-inp", className)} {...props} />;
+  return (
+    <textarea ref={ref} rows={rows} className={cn("fb-inp", FIELD_BOX, "min-h-16", className)} {...props} />
+  );
 });

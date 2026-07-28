@@ -86,17 +86,22 @@ const CSS = `
 .fb-hint { font-size:11px; line-height:1.45; color:var(--warm-faint); }
 .fb-hint--err { color:var(--warm-danger); }
 
-.fb-inp { width:100%; border:1px solid var(--warm-border); background:var(--warm-card); color:var(--warm-ink);
-  border-radius:6px; padding:6px 10px; font-family:inherit; font-size:12.5px; line-height:18px;
-  transition: border-color .12s, box-shadow .12s; }
+/* .fb-inp carries only what a utility CANNOT express — the states. The BOX
+   (width, padding, font-size) deliberately lives on the component as Tailwind
+   classes instead, because this stylesheet is in the body and would beat any
+   utility a call site passes for the same property. A control asked to be
+   w-[180px] would have come out full-width, and the diff would have looked
+   innocent. See "Traps that have already cost us". */
+.fb-inp { border:1px solid var(--warm-border); background:var(--warm-card); color:var(--warm-ink);
+  border-radius:6px; font-family:inherit; transition: border-color .12s, box-shadow .12s; }
 .fb-inp::placeholder { color:var(--warm-faint); }
 .fb-inp:hover:not(:disabled):not([aria-invalid="true"]) { border-color:var(--warm-border-strong); }
 .fb-inp:focus { outline:none; border-color:var(--accent-600); box-shadow:0 0 0 3px var(--accent-100); }
 .fb-inp:disabled { background:var(--warm-chip); color:var(--warm-faint); cursor:default; }
 .fb-inp[aria-invalid="true"] { border-color:var(--warm-danger); }
 .fb-inp[aria-invalid="true"]:focus { border-color:var(--warm-danger); box-shadow:0 0 0 3px var(--warm-danger-soft); }
-textarea.fb-inp { min-height:64px; resize:vertical; }
-select.fb-inp { appearance:none; -webkit-appearance:none; cursor:pointer; padding-right:26px; }
+textarea.fb-inp { resize:vertical; }
+select.fb-inp { appearance:none; -webkit-appearance:none; cursor:pointer; }
 /* The caret is a sibling element, not a background-image data URI: a data URI
    cannot read var(--warm-faint), so an inlined SVG would be the one neutral in
    the system that ignores a client's token overrides. */
