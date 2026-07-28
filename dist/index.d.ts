@@ -667,6 +667,13 @@ declare const segItemClass: string;
  * The `active` prop is retained for API compatibility but is no longer needed —
  * the active treatment comes from Radix's own `data-state`, so the parent cannot
  * get out of sync with it.
+ *
+ * WHY THE ACTIVE STATE IS SPELLED OUT: the shadcn base gives the active trigger a
+ * raised pill — `data-[state=active]:bg-background` + `shadow-sm`. A plain
+ * `bg-transparent` does NOT cancel it: tailwind-merge only drops a class when the
+ * MODIFIER matches too, so the unmodified utility and the `data-[state=active]:`
+ * one both survive, and Tailwind emits variants after base utilities, so the pill
+ * wins. It has to be beaten on its own modifier.
  */
 declare function PageTabList({ className, children, ...props }: React.ComponentPropsWithoutRef<typeof TabsList>): React.JSX.Element;
 interface PageTabTriggerProps extends React.ComponentPropsWithoutRef<typeof TabsTrigger> {

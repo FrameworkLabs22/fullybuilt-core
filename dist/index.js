@@ -909,8 +909,9 @@ function PageTabTrigger({ active: _active, icon, className, children, ...props }
     TabsTrigger,
     {
       className: cn(
-        "fb-tab -mb-px flex items-center gap-2 rounded-none border-0 border-b-2 bg-transparent px-0 pb-2.5 pt-1",
-        "text-[13px] font-medium shadow-none transition-colors data-[state=active]:shadow-none",
+        "fb-tab -mb-px flex items-center gap-2 rounded-none border-0 border-b-2 bg-transparent px-0 py-0 pb-2.5 pt-1",
+        "text-[13px] font-medium shadow-none transition-colors",
+        "data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-warm-ink",
         className
       ),
       ...props,
