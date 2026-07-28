@@ -5,8 +5,12 @@ charts, cards, segmented tabs, etc.). Single source of truth — edit here, vers
 and every client app picks it up. Keeps the dashboards consistent instead of each
 fork drifting.
 
+**The rules live in [DESIGN-SYSTEM.md](./DESIGN-SYSTEM.md).** Read it before adding
+a surface, and read it *and put the component in `src/`* before adding a component.
+
 ## What's inside
 - `src/warm/` — the design-system components and chart primitives
+- `src/warm/form/` — the form layer (`Field`, `Input`, `Select`, `Checkbox`, `Switch`, `Modal`)
 - `src/lib/` — `utils` (cn) + `motion` helpers used by the components
 - `src/ui/` — the shadcn primitives the warm system depends on (skeleton, tabs, sheet, resizable)
 - `dist/` — prebuilt ESM + types (committed, so consumers need no build step)

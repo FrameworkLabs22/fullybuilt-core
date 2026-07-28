@@ -66,6 +66,83 @@ const CSS = `
 .fb-qty { -moz-appearance:textfield; appearance:textfield; }
 .fb-check { width:13px; height:13px; cursor:pointer; accent-color:var(--warm-primary); }
 
+/* ── form fields ──────────────────────────────────────────────────────────
+   The control shell is .fb-inp, a NEW class rather than sizing added to the
+   .fb-input above it. This stylesheet renders in the body, so a padding
+   declaration on .fb-input would beat the Tailwind padding utility that every
+   existing call site already passes — same specificity, later in document order.
+   A separate class leaves those call sites untouched.
+
+   The label sits at the BODY tier (sub), not the faint tier that carries column
+   labels and units. A field label is the control's name — the thing you read to
+   know what you are typing into — and a form whose labels are all faint reads as
+   a disabled form. The hint below it is genuinely secondary, so that one is faint.
+
+   Invalid state is a border plus a message, never a border alone: a red outline
+   with no text tells someone that something is wrong and not what. */
+.fb-field { display:flex; flex-direction:column; gap:5px; }
+.fb-label { font-size:12px; font-weight:600; line-height:16px; color:var(--warm-sub); }
+.fb-label--req::after { content:"*"; margin-left:3px; color:var(--warm-danger); }
+.fb-hint { font-size:11px; line-height:1.45; color:var(--warm-faint); }
+.fb-hint--err { color:var(--warm-danger); }
+
+.fb-inp { width:100%; border:1px solid var(--warm-border); background:var(--warm-card); color:var(--warm-ink);
+  border-radius:6px; padding:6px 10px; font-family:inherit; font-size:12.5px; line-height:18px;
+  transition: border-color .12s, box-shadow .12s; }
+.fb-inp::placeholder { color:var(--warm-faint); }
+.fb-inp:hover:not(:disabled):not([aria-invalid="true"]) { border-color:var(--warm-border-strong); }
+.fb-inp:focus { outline:none; border-color:var(--accent-600); box-shadow:0 0 0 3px var(--accent-100); }
+.fb-inp:disabled { background:var(--warm-chip); color:var(--warm-faint); cursor:default; }
+.fb-inp[aria-invalid="true"] { border-color:var(--warm-danger); }
+.fb-inp[aria-invalid="true"]:focus { border-color:var(--warm-danger); box-shadow:0 0 0 3px var(--warm-danger-soft); }
+textarea.fb-inp { min-height:64px; resize:vertical; }
+select.fb-inp { appearance:none; -webkit-appearance:none; cursor:pointer; padding-right:26px; }
+/* The caret is a sibling element, not a background-image data URI: a data URI
+   cannot read var(--warm-faint), so an inlined SVG would be the one neutral in
+   the system that ignores a client's token overrides. */
+.fb-selwrap { position:relative; display:block; }
+.fb-selcaret { position:absolute; right:8px; top:50%; transform:translateY(-50%); pointer-events:none;
+  display:flex; color:var(--warm-faint); }
+
+/* ── checkbox, radio, switch ──────────────────────────────────────────────
+   All three take their ON color from --warm-primary, not from the accent ramp.
+   The ramp is interaction-only (rule 1) — it says "you are touching this", which
+   is not what a checked box means. This also keeps them consistent with the
+   .fb-check accent-color that predates them. */
+.fb-choice { display:inline-flex; align-items:center; gap:7px; font-size:12.5px; line-height:18px;
+  color:var(--warm-sub); cursor:pointer; }
+.fb-choice:has(input:disabled) { color:var(--warm-faint); cursor:default; }
+.fb-box { width:14px; height:14px; margin:0; flex-shrink:0; cursor:pointer; accent-color:var(--warm-primary); }
+.fb-box:disabled { cursor:default; }
+.fb-box:focus-visible { outline:2px solid var(--accent-600); outline-offset:2px; }
+
+.fb-switch { appearance:none; -webkit-appearance:none; position:relative; flex-shrink:0; margin:0;
+  width:30px; height:17px; border-radius:9px; background:var(--warm-track);
+  border:1px solid var(--warm-border-strong); cursor:pointer;
+  transition: background-color .14s, border-color .14s; }
+.fb-switch::after { content:""; position:absolute; top:1px; left:1px; width:13px; height:13px; border-radius:50%;
+  background:var(--warm-card); box-shadow:0 1px 2px rgba(16,18,24,0.3); transition: transform .14s; }
+.fb-switch:checked { background:var(--warm-primary); border-color:var(--warm-primary); }
+.fb-switch:checked::after { transform:translateX(13px); }
+.fb-switch:disabled { opacity:.5; cursor:default; }
+.fb-switch:focus-visible { outline:2px solid var(--accent-600); outline-offset:2px; }
+
+/* ── modal ────────────────────────────────────────────────────────────────
+   A modal is one of the few things on a dashboard that genuinely floats, so it
+   is allowed the shadow that rule 2 denies a card. It keeps the strong edge too:
+   the shadow places it above the page, the edge still defines it. */
+.fb-modal-scrim { position:fixed; inset:0; z-index:50;
+  background:color-mix(in srgb, var(--warm-ink) 45%, transparent); animation:fb-fade-in .15s ease-out; }
+.fb-modal { position:fixed; z-index:51; left:50%; top:50%; transform:translate(-50%,-50%);
+  display:flex; flex-direction:column; width:calc(100vw - 32px); max-height:calc(100vh - 64px);
+  background:var(--warm-card); border:1px solid var(--warm-border-strong); border-radius:8px;
+  box-shadow:0 16px 48px rgba(16,18,24,0.18); animation:fb-modal-in .16s ease-out; }
+.fb-modal-x { position:absolute; top:12px; right:12px; display:inline-flex; align-items:center; justify-content:center;
+  width:24px; height:24px; border:0; border-radius:5px; background:transparent; color:var(--warm-faint);
+  cursor:pointer; transition: color .12s, background-color .12s; }
+.fb-modal-x:hover { color:var(--warm-ink); background:var(--warm-chip); }
+.fb-modal-x:focus-visible { outline:2px solid var(--accent-600); outline-offset:1px; }
+
 /* ── dropdowns ───────────────────────────────────────────────────────────── */
 .fb-dd-trigger { cursor:pointer; font-weight:500; transition: border-color .12s; }
 .fb-dd-trigger:hover { border-color:var(--warm-border-strong); }
@@ -155,6 +232,7 @@ const CSS = `
 .fb-chart-reveal { animation:fb-chart-reveal .5s ease-out both; }
 
 @keyframes fb-tip-in { from { opacity:0; transform:translateY(3px); } }
+@keyframes fb-modal-in { from { opacity:0; transform:translate(-50%,-48%) scale(.98); } to { opacity:1; transform:translate(-50%,-50%) scale(1); } }
 @keyframes fb-toast-in { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
 @keyframes fb-drawer-in { from { transform:translateX(28px); opacity:0; } to { transform:none; opacity:1; } }
 @keyframes fb-fade-in { from { opacity:0; } to { opacity:1; } }
@@ -165,7 +243,11 @@ const CSS = `
    states that already read without it, so the honest response to the OS setting
    is to remove it entirely rather than shorten it. */
 @media (prefers-reduced-motion: reduce) {
-  .fb-dd, .fb-tipin, .fb-toast, .fb-drawer, .fb-scrim, .fb-chart-reveal { animation:none; }
+  .fb-dd, .fb-tipin, .fb-toast, .fb-drawer, .fb-scrim, .fb-chart-reveal,
+  .fb-modal, .fb-modal-scrim { animation:none; }
+  /* The switch thumb is the one state change that would be unreadable if it
+     simply vanished, so it loses its travel time rather than its travel. */
+  .fb-switch::after { transition:none; }
 }
 `;
 

@@ -863,6 +863,176 @@ interface DetailDrawerProps {
  */
 declare function DetailDrawer({ open, onOpenChange, title, description, width, footer, children, }: DetailDrawerProps): React.JSX.Element;
 
+/**
+ * The wrapper that makes a form a system rather than a pile of inputs.
+ *
+ * `<Field>` owns the three things every labelled control needs and that call
+ * sites reliably get wrong on their own: the label-to-control association, the
+ * hint, and the error. It generates one id, points `htmlFor` at it, and hands it
+ * back to the control via a render prop along with `aria-describedby` and
+ * `aria-invalid` already wired.
+ *
+ * The alternative — every call site remembering to write its own `id`, match it
+ * in `htmlFor`, and add `aria-describedby` when and only when a hint is present —
+ * is the kind of thing that is correct in the first ten forms and wrong in the
+ * next fifty. Here it cannot be omitted, because there is no way to render the
+ * control without receiving the props.
+ *
+ * An `error` replaces the hint rather than stacking beneath it. Two lines of
+ * secondary text under one input is where people stop reading either.
+ */
+/** The props `<Field>` hands its control. Spread them onto the input. */
+interface FieldControlProps {
+    id: string;
+    "aria-describedby": string | undefined;
+    "aria-invalid": true | undefined;
+}
+interface FieldProps {
+    label: React.ReactNode;
+    /** Marks the label and sets `required` on the control. */
+    required?: boolean;
+    /** Secondary text below the control. Hidden while an `error` is showing. */
+    hint?: React.ReactNode;
+    /** Error message. Its presence is what puts the control in the invalid state. */
+    error?: React.ReactNode;
+    className?: string;
+    children: (props: FieldControlProps) => React.ReactNode;
+}
+declare function Field({ label, required, hint, error, className, children }: FieldProps): React.JSX.Element;
+/**
+ * A standalone label, for the cases `<Field>` cannot cover — a fieldset legend
+ * over a radio group, or a control whose layout puts the label somewhere Field's
+ * stack does not reach.
+ */
+declare function Label({ required, className, ...props }: React.LabelHTMLAttributes<HTMLLabelElement> & {
+    required?: boolean;
+}): React.JSX.Element;
+/** Secondary text under a control, for the same standalone cases as `<Label>`. */
+declare function Hint({ error, className, ...props }: React.HTMLAttributes<HTMLSpanElement> & {
+    error?: boolean;
+}): React.JSX.Element;
+
+/**
+ * Text input and multi-line input.
+ *
+ * Both are the same shell: a real border in `border`, no shadow — an input is a
+ * surface you write on, and rule 2 ("edges define") applies to it exactly as it
+ * applies to a card. The focus treatment is the system's one focus treatment,
+ * an accent-600 border with an accent-100 glow, and it is defined in
+ * `<SystemStyle />` rather than here so a control added later cannot invent its
+ * own.
+ *
+ * Invalid state comes from `aria-invalid`, which `<Field>` sets when it has an
+ * `error`. Driving the visual off the ARIA attribute rather than a `variant`
+ * prop means a control cannot look wrong while telling a screen reader it is
+ * fine, or the reverse.
+ */
+declare const Input: React.ForwardRefExoticComponent<React.InputHTMLAttributes<HTMLInputElement> & React.RefAttributes<HTMLInputElement>>;
+declare const Textarea: React.ForwardRefExoticComponent<React.TextareaHTMLAttributes<HTMLTextAreaElement> & React.RefAttributes<HTMLTextAreaElement>>;
+
+/**
+ * Single-choice select, built on the native `<select>`.
+ *
+ * Native on purpose. A dashboard select is almost always a short list of plain
+ * strings — a date range, a status filter, a warehouse — and for that the native
+ * control is strictly better than a popover reimplementation: keyboard support,
+ * type-ahead and the platform's own picker on touch, none of which have to be
+ * maintained. It also cannot be clipped by an `overflow: auto` table wrapper,
+ * which is the failure `<TipLayer>` exists to avoid and which quietly breaks
+ * popover-based selects inside data grids.
+ *
+ * The caret is a sibling element rather than a background-image, so it reads
+ * `--warm-faint` like every other neutral instead of freezing one gray into a
+ * data URI.
+ *
+ * When a picker genuinely needs rich rows — an avatar, a two-line option, live
+ * search — that is a different control and belongs in the app until enough
+ * surfaces want the same one.
+ */
+interface SelectOption {
+    value: string;
+    label: string;
+    disabled?: boolean;
+}
+interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
+    /** Convenience for the common case; ignored when `children` are passed. */
+    options?: SelectOption[];
+    /** Leading empty option, e.g. "All warehouses". */
+    placeholder?: string;
+}
+declare const Select: React.ForwardRefExoticComponent<SelectProps & React.RefAttributes<HTMLSelectElement>>;
+
+/**
+ * Checkbox, radio and switch.
+ *
+ * All three are real form inputs with `appearance: none` styling, not buttons
+ * wearing ARIA. They submit, they restore on back-navigation, they work inside a
+ * `<form>`, and the label is a real `<label>` wrapping the control so the whole
+ * row is a hit target without anyone wiring an `htmlFor`.
+ *
+ * Their ON color is `--warm-primary`, not the accent ramp. The ramp is
+ * interaction-only (rule 1): it means "this is the thing you are touching",
+ * which is not what a checked box means — a checked box is state, and state that
+ * borrowed the focus color would make every settled form look active.
+ *
+ * **Checkbox vs switch is not a style choice.** A switch applies immediately and
+ * a checkbox does not. Use `<Switch>` where flipping it takes effect on the spot
+ * (a filter, a preference) and `<Checkbox>` where it is staged until a Save.
+ * Getting this backwards is how people lose work to a form they thought they had
+ * already applied.
+ */
+interface ChoiceProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "type"> {
+    label?: React.ReactNode;
+    /** Class for the wrapping label row (the control keeps `className`). */
+    rowClassName?: string;
+}
+/** Staged choice — takes effect when the surrounding form is saved. */
+declare const Checkbox: React.ForwardRefExoticComponent<ChoiceProps & React.RefAttributes<HTMLInputElement>>;
+/** One of a set. Give every member of the group the same `name`. */
+declare const Radio: React.ForwardRefExoticComponent<ChoiceProps & React.RefAttributes<HTMLInputElement>>;
+/** Immediate choice — takes effect the moment it is flipped. */
+declare const Switch: React.ForwardRefExoticComponent<ChoiceProps & React.RefAttributes<HTMLInputElement>>;
+
+/**
+ * Centered modal — the system's blocking overlay.
+ *
+ * The counterpart to `<DetailDrawer>`, and the two are not interchangeable. A
+ * drawer re-presents data the user already has, alongside the page it came from;
+ * a modal interrupts, because what it asks for has to be answered before
+ * anything else makes sense. Reach for the drawer first — most of what gets
+ * built as a modal on a dashboard is really a detail view, and a detail view
+ * that blocks the page costs the user the context they opened it from.
+ *
+ * A modal is one of the few things on a dashboard that genuinely floats, so it
+ * carries the shadow rule 2 denies a card — and keeps the strong edge as well.
+ *
+ * Escape and scrim-click close it. Both are deliberate: a dialog that traps you
+ * unless you find its button is a dialog people learn to dread. If a specific
+ * one must not be dismissed accidentally — a destructive confirm — pass
+ * `dismissible={false}`.
+ */
+declare const MAX_WIDTH: {
+    readonly sm: 380;
+    readonly md: 520;
+    readonly lg: 720;
+};
+interface ModalProps {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    title: React.ReactNode;
+    /** Sub-line under the title. Also the dialog's accessible description. */
+    description?: React.ReactNode;
+    /** sm 380px · md 520px (default) · lg 720px. */
+    size?: keyof typeof MAX_WIDTH;
+    /** Pinned action row. Put the confirming `<Btn>` last — it reads as the end of the sentence. */
+    footer?: React.ReactNode;
+    /** Set false for a destructive confirm that must not close on Escape or scrim. */
+    dismissible?: boolean;
+    className?: string;
+    children: React.ReactNode;
+}
+declare function Modal({ open, onOpenChange, title, description, size, footer, dismissible, className, children, }: ModalProps): React.JSX.Element;
+
 /** Mount once per page that uses the design system. */
 declare function SystemStyle(): React.JSX.Element;
 
@@ -1051,4 +1221,4 @@ declare function makeAccentRamp(brandHex: string): AccentRamp;
  */
 declare function accentRampTokens(brandHex: string): Record<string, string>;
 
-export { ACCENT, AXIS_TICK, type AccentRamp, AutoGrid, BAR_RADIUS, BAR_RADIUS_H, Badge, type BadgeTone, BarGradient, Btn, CHART_HEIGHT, CHART_MARGIN, CHART_MARGIN_COMPACT, CHART_SERIES, Card, ChartCard, ChartDataTable, type ChartDataTableColumn, type ChartDataTableProps, ChartEmpty, type ChartEmptyProps, ChartGradient, ChartSkel, ChartTooltip, type ChartTooltipRow, Copy, CountUp, DataGridWrapper, Def, Delta, DetailDrawer, EmptyState, ExpandableRow, GRID, GridRow, KpiStrip, KpiTile, KpiVariantContext, MockTag, PageStack, PageTabList, PageTabTrigger, Pill, RAMP_STOPS, REDUCED, type RampStop, type RankedItem, RankedListCard, SPACE, SectionLabel, SegContent, SegList, SegTabs, SegTrigger, Skel, Sparkline, SplitPane, Stagger, SystemStyle, TIP, TOOLTIP_STYLE, Td, Th, TipLayer, Toaster, type Tone, WARM, WarmGrid, WarmLegend, type WarmLegendItem, type WarmLegendProps, WarmTable, WarmThead, WarmTooltip, type WarmTooltipItem, type WarmTooltipProps, WarmTr, WidgetContainer, accentRampTokens, activeDot, axisTick, barCursor, barValueLabel, categoryXAxis, categoryYAxis, chartTip, crosshairCursor, hexToOklch, makeAccentRamp, numberYAxis, oklchToHex, pressable, pressableSoft, referenceTarget, resetWarmCache, segItemClass, segTrackClass, seriesColor, timeXAxis, toast, tone };
+export { ACCENT, AXIS_TICK, type AccentRamp, AutoGrid, BAR_RADIUS, BAR_RADIUS_H, Badge, type BadgeTone, BarGradient, Btn, CHART_HEIGHT, CHART_MARGIN, CHART_MARGIN_COMPACT, CHART_SERIES, Card, ChartCard, ChartDataTable, type ChartDataTableColumn, type ChartDataTableProps, ChartEmpty, type ChartEmptyProps, ChartGradient, ChartSkel, ChartTooltip, type ChartTooltipRow, Checkbox, Copy, CountUp, DataGridWrapper, Def, Delta, DetailDrawer, EmptyState, ExpandableRow, Field, type FieldControlProps, GRID, GridRow, Hint, Input, KpiStrip, KpiTile, KpiVariantContext, Label, MockTag, Modal, PageStack, PageTabList, PageTabTrigger, Pill, RAMP_STOPS, REDUCED, Radio, type RampStop, type RankedItem, RankedListCard, SPACE, SectionLabel, SegContent, SegList, SegTabs, SegTrigger, Select, type SelectOption, Skel, Sparkline, SplitPane, Stagger, Switch, SystemStyle, TIP, TOOLTIP_STYLE, Td, Textarea, Th, TipLayer, Toaster, type Tone, WARM, WarmGrid, WarmLegend, type WarmLegendItem, type WarmLegendProps, WarmTable, WarmThead, WarmTooltip, type WarmTooltipItem, type WarmTooltipProps, WarmTr, WidgetContainer, accentRampTokens, activeDot, axisTick, barCursor, barValueLabel, categoryXAxis, categoryYAxis, chartTip, crosshairCursor, hexToOklch, makeAccentRamp, numberYAxis, oklchToHex, pressable, pressableSoft, referenceTarget, resetWarmCache, segItemClass, segTrackClass, seriesColor, timeXAxis, toast, tone };

@@ -1,7 +1,7 @@
 import { clsx } from 'clsx';
 import { extendTailwindMerge } from 'tailwind-merge';
 import { jsx, jsxs, Fragment } from 'react/jsx-runtime';
-import { X, ArrowUpRight, ArrowDownRight, CaretRight, Check, CopySimple, DotsSixVertical } from '@phosphor-icons/react';
+import { X, CaretDown, ArrowUpRight, ArrowDownRight, CaretRight, Check, CopySimple, DotsSixVertical } from '@phosphor-icons/react';
 import { ResponsiveContainer, LineChart, Line, CartesianGrid } from 'recharts';
 import * as React7 from 'react';
 import { createContext, useState, useRef, useEffect } from 'react';
@@ -1214,6 +1214,123 @@ function DetailDrawer({
     footer && /* @__PURE__ */ jsx("div", { className: "mt-4 flex items-center justify-end gap-2 border-t border-warm-border pt-4", children: footer })
   ] }) });
 }
+function Field({ label, required, hint, error, className, children }) {
+  const id = React7.useId();
+  const noteId = `${id}-note`;
+  const note = error ?? hint;
+  return /* @__PURE__ */ jsxs("div", { className: cn("fb-field", className), children: [
+    /* @__PURE__ */ jsx("label", { htmlFor: id, className: cn("fb-label", required && "fb-label--req"), children: label }),
+    children({
+      id,
+      "aria-describedby": note ? noteId : void 0,
+      "aria-invalid": error ? true : void 0
+    }),
+    note && /* @__PURE__ */ jsx("span", { id: noteId, className: cn("fb-hint", error && "fb-hint--err"), children: note })
+  ] });
+}
+function Label({
+  required,
+  className,
+  ...props
+}) {
+  return /* @__PURE__ */ jsx("label", { className: cn("fb-label", required && "fb-label--req", className), ...props });
+}
+function Hint({
+  error,
+  className,
+  ...props
+}) {
+  return /* @__PURE__ */ jsx("span", { className: cn("fb-hint", error && "fb-hint--err", className), ...props });
+}
+var Input = React7.forwardRef(
+  function Input2({ className, type = "text", ...props }, ref) {
+    return /* @__PURE__ */ jsx("input", { ref, type, className: cn("fb-inp", className), ...props });
+  }
+);
+var Textarea = React7.forwardRef(function Textarea2({ className, rows = 3, ...props }, ref) {
+  return /* @__PURE__ */ jsx("textarea", { ref, rows, className: cn("fb-inp", className), ...props });
+});
+var Select = React7.forwardRef(function Select2({ options, placeholder, className, children, ...props }, ref) {
+  return /* @__PURE__ */ jsxs("span", { className: "fb-selwrap", children: [
+    /* @__PURE__ */ jsxs("select", { ref, className: cn("fb-inp", className), ...props, children: [
+      placeholder && /* @__PURE__ */ jsx("option", { value: "", children: placeholder }),
+      children ?? options?.map((o) => /* @__PURE__ */ jsx("option", { value: o.value, disabled: o.disabled, children: o.label }, o.value))
+    ] }),
+    /* @__PURE__ */ jsx("span", { className: "fb-selcaret", "aria-hidden": "true", children: /* @__PURE__ */ jsx(CaretDown, { size: 12, weight: "bold" }) })
+  ] });
+});
+function withLabel(control, label, rowClassName) {
+  if (!label) return control;
+  return /* @__PURE__ */ jsxs("label", { className: cn("fb-choice", rowClassName), children: [
+    control,
+    /* @__PURE__ */ jsx("span", { children: label })
+  ] });
+}
+var Checkbox = React7.forwardRef(function Checkbox2({ label, rowClassName, className, ...props }, ref) {
+  return withLabel(
+    /* @__PURE__ */ jsx("input", { ref, type: "checkbox", className: cn("fb-box", className), ...props }),
+    label,
+    rowClassName
+  );
+});
+var Radio = React7.forwardRef(function Radio2({ label, rowClassName, className, ...props }, ref) {
+  return withLabel(
+    /* @__PURE__ */ jsx("input", { ref, type: "radio", className: cn("fb-box", className), ...props }),
+    label,
+    rowClassName
+  );
+});
+var Switch = React7.forwardRef(function Switch2({ label, rowClassName, className, ...props }, ref) {
+  return withLabel(
+    // role="switch" so it is announced as on/off rather than checked/unchecked —
+    // the distinction that tells someone it has already taken effect.
+    /* @__PURE__ */ jsx("input", { ref, type: "checkbox", role: "switch", className: cn("fb-switch", className), ...props }),
+    label,
+    rowClassName
+  );
+});
+var MAX_WIDTH = { sm: 380, md: 520, lg: 720 };
+function Modal({
+  open,
+  onOpenChange,
+  title,
+  description,
+  size = "md",
+  footer,
+  dismissible = true,
+  className,
+  children
+}) {
+  const block = (e) => {
+    if (!dismissible) e.preventDefault();
+  };
+  return /* @__PURE__ */ jsx(SheetPrimitive.Root, { open, onOpenChange, children: /* @__PURE__ */ jsxs(SheetPrimitive.Portal, { children: [
+    /* @__PURE__ */ jsx(SheetPrimitive.Overlay, { className: "fb-modal-scrim" }),
+    /* @__PURE__ */ jsxs(
+      SheetPrimitive.Content,
+      {
+        className: cn("fb-modal", className),
+        style: { maxWidth: MAX_WIDTH[size] },
+        onEscapeKeyDown: block,
+        onPointerDownOutside: block,
+        onInteractOutside: block,
+        children: [
+          /* @__PURE__ */ jsxs("div", { className: "px-6 pb-4 pt-5", children: [
+            /* @__PURE__ */ jsx(SheetPrimitive.Title, { className: "text-warm-ink pr-7 text-[15px] font-semibold leading-5", children: title }),
+            description ? /* @__PURE__ */ jsx(SheetPrimitive.Description, { className: "text-warm-faint mt-1 pr-7 text-xs leading-relaxed", children: description }) : (
+              // Radix warns when a dialog has no description; this says "none on
+              // purpose" instead of leaving a console warning for every modal.
+              /* @__PURE__ */ jsx(SheetPrimitive.Description, {})
+            )
+          ] }),
+          /* @__PURE__ */ jsx("div", { className: "border-warm-border flex-1 overflow-y-auto border-t px-6 py-5", children }),
+          footer && /* @__PURE__ */ jsx("div", { className: "border-warm-border flex items-center justify-end gap-2 border-t px-6 py-4", children: footer }),
+          dismissible && /* @__PURE__ */ jsx(SheetPrimitive.Close, { className: "fb-modal-x", "aria-label": "Close", children: /* @__PURE__ */ jsx(X, { size: 13, weight: "bold" }) })
+        ]
+      }
+    )
+  ] }) });
+}
 var CSS = `
 /* \u2500\u2500 buttons \u2014 ranked by darkness, not by hue \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
    primary (ink) > secondary (muted fill) > ghost (bare text). Rank reads at a
@@ -1259,6 +1376,83 @@ var CSS = `
 .fb-qty::-webkit-outer-spin-button, .fb-qty::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
 .fb-qty { -moz-appearance:textfield; appearance:textfield; }
 .fb-check { width:13px; height:13px; cursor:pointer; accent-color:var(--warm-primary); }
+
+/* \u2500\u2500 form fields \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+   The control shell is .fb-inp, a NEW class rather than sizing added to the
+   .fb-input above it. This stylesheet renders in the body, so a padding
+   declaration on .fb-input would beat the Tailwind padding utility that every
+   existing call site already passes \u2014 same specificity, later in document order.
+   A separate class leaves those call sites untouched.
+
+   The label sits at the BODY tier (sub), not the faint tier that carries column
+   labels and units. A field label is the control's name \u2014 the thing you read to
+   know what you are typing into \u2014 and a form whose labels are all faint reads as
+   a disabled form. The hint below it is genuinely secondary, so that one is faint.
+
+   Invalid state is a border plus a message, never a border alone: a red outline
+   with no text tells someone that something is wrong and not what. */
+.fb-field { display:flex; flex-direction:column; gap:5px; }
+.fb-label { font-size:12px; font-weight:600; line-height:16px; color:var(--warm-sub); }
+.fb-label--req::after { content:"*"; margin-left:3px; color:var(--warm-danger); }
+.fb-hint { font-size:11px; line-height:1.45; color:var(--warm-faint); }
+.fb-hint--err { color:var(--warm-danger); }
+
+.fb-inp { width:100%; border:1px solid var(--warm-border); background:var(--warm-card); color:var(--warm-ink);
+  border-radius:6px; padding:6px 10px; font-family:inherit; font-size:12.5px; line-height:18px;
+  transition: border-color .12s, box-shadow .12s; }
+.fb-inp::placeholder { color:var(--warm-faint); }
+.fb-inp:hover:not(:disabled):not([aria-invalid="true"]) { border-color:var(--warm-border-strong); }
+.fb-inp:focus { outline:none; border-color:var(--accent-600); box-shadow:0 0 0 3px var(--accent-100); }
+.fb-inp:disabled { background:var(--warm-chip); color:var(--warm-faint); cursor:default; }
+.fb-inp[aria-invalid="true"] { border-color:var(--warm-danger); }
+.fb-inp[aria-invalid="true"]:focus { border-color:var(--warm-danger); box-shadow:0 0 0 3px var(--warm-danger-soft); }
+textarea.fb-inp { min-height:64px; resize:vertical; }
+select.fb-inp { appearance:none; -webkit-appearance:none; cursor:pointer; padding-right:26px; }
+/* The caret is a sibling element, not a background-image data URI: a data URI
+   cannot read var(--warm-faint), so an inlined SVG would be the one neutral in
+   the system that ignores a client's token overrides. */
+.fb-selwrap { position:relative; display:block; }
+.fb-selcaret { position:absolute; right:8px; top:50%; transform:translateY(-50%); pointer-events:none;
+  display:flex; color:var(--warm-faint); }
+
+/* \u2500\u2500 checkbox, radio, switch \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+   All three take their ON color from --warm-primary, not from the accent ramp.
+   The ramp is interaction-only (rule 1) \u2014 it says "you are touching this", which
+   is not what a checked box means. This also keeps them consistent with the
+   .fb-check accent-color that predates them. */
+.fb-choice { display:inline-flex; align-items:center; gap:7px; font-size:12.5px; line-height:18px;
+  color:var(--warm-sub); cursor:pointer; }
+.fb-choice:has(input:disabled) { color:var(--warm-faint); cursor:default; }
+.fb-box { width:14px; height:14px; margin:0; flex-shrink:0; cursor:pointer; accent-color:var(--warm-primary); }
+.fb-box:disabled { cursor:default; }
+.fb-box:focus-visible { outline:2px solid var(--accent-600); outline-offset:2px; }
+
+.fb-switch { appearance:none; -webkit-appearance:none; position:relative; flex-shrink:0; margin:0;
+  width:30px; height:17px; border-radius:9px; background:var(--warm-track);
+  border:1px solid var(--warm-border-strong); cursor:pointer;
+  transition: background-color .14s, border-color .14s; }
+.fb-switch::after { content:""; position:absolute; top:1px; left:1px; width:13px; height:13px; border-radius:50%;
+  background:var(--warm-card); box-shadow:0 1px 2px rgba(16,18,24,0.3); transition: transform .14s; }
+.fb-switch:checked { background:var(--warm-primary); border-color:var(--warm-primary); }
+.fb-switch:checked::after { transform:translateX(13px); }
+.fb-switch:disabled { opacity:.5; cursor:default; }
+.fb-switch:focus-visible { outline:2px solid var(--accent-600); outline-offset:2px; }
+
+/* \u2500\u2500 modal \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+   A modal is one of the few things on a dashboard that genuinely floats, so it
+   is allowed the shadow that rule 2 denies a card. It keeps the strong edge too:
+   the shadow places it above the page, the edge still defines it. */
+.fb-modal-scrim { position:fixed; inset:0; z-index:50;
+  background:color-mix(in srgb, var(--warm-ink) 45%, transparent); animation:fb-fade-in .15s ease-out; }
+.fb-modal { position:fixed; z-index:51; left:50%; top:50%; transform:translate(-50%,-50%);
+  display:flex; flex-direction:column; width:calc(100vw - 32px); max-height:calc(100vh - 64px);
+  background:var(--warm-card); border:1px solid var(--warm-border-strong); border-radius:8px;
+  box-shadow:0 16px 48px rgba(16,18,24,0.18); animation:fb-modal-in .16s ease-out; }
+.fb-modal-x { position:absolute; top:12px; right:12px; display:inline-flex; align-items:center; justify-content:center;
+  width:24px; height:24px; border:0; border-radius:5px; background:transparent; color:var(--warm-faint);
+  cursor:pointer; transition: color .12s, background-color .12s; }
+.fb-modal-x:hover { color:var(--warm-ink); background:var(--warm-chip); }
+.fb-modal-x:focus-visible { outline:2px solid var(--accent-600); outline-offset:1px; }
 
 /* \u2500\u2500 dropdowns \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 */
 .fb-dd-trigger { cursor:pointer; font-weight:500; transition: border-color .12s; }
@@ -1349,6 +1543,7 @@ var CSS = `
 .fb-chart-reveal { animation:fb-chart-reveal .5s ease-out both; }
 
 @keyframes fb-tip-in { from { opacity:0; transform:translateY(3px); } }
+@keyframes fb-modal-in { from { opacity:0; transform:translate(-50%,-48%) scale(.98); } to { opacity:1; transform:translate(-50%,-50%) scale(1); } }
 @keyframes fb-toast-in { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
 @keyframes fb-drawer-in { from { transform:translateX(28px); opacity:0; } to { transform:none; opacity:1; } }
 @keyframes fb-fade-in { from { opacity:0; } to { opacity:1; } }
@@ -1359,7 +1554,11 @@ var CSS = `
    states that already read without it, so the honest response to the OS setting
    is to remove it entirely rather than shorten it. */
 @media (prefers-reduced-motion: reduce) {
-  .fb-dd, .fb-tipin, .fb-toast, .fb-drawer, .fb-scrim, .fb-chart-reveal { animation:none; }
+  .fb-dd, .fb-tipin, .fb-toast, .fb-drawer, .fb-scrim, .fb-chart-reveal,
+  .fb-modal, .fb-modal-scrim { animation:none; }
+  /* The switch thumb is the one state change that would be unreadable if it
+     simply vanished, so it loses its travel time rather than its travel. */
+  .fb-switch::after { transition:none; }
 }
 `;
 function SystemStyle() {
@@ -1628,6 +1827,6 @@ function accentRampTokens(brandHex) {
   return tokens;
 }
 
-export { ACCENT, AXIS_TICK, AutoGrid, BAR_RADIUS, BAR_RADIUS_H, Badge, BarGradient, Btn, CHART_HEIGHT, CHART_MARGIN, CHART_MARGIN_COMPACT, CHART_SERIES, Card, ChartCard, ChartDataTable, ChartEmpty, ChartGradient, ChartSkel, ChartTooltip, Copy, CountUp, DataGridWrapper, Def, Delta, DetailDrawer, EmptyState, ExpandableRow, GRID, GridRow, KpiStrip, KpiTile, KpiVariantContext, MockTag, PageStack, PageTabList, PageTabTrigger, Pill, RAMP_STOPS, REDUCED, RankedListCard, SPACE, SectionLabel, SegContent, SegList, SegTabs, SegTrigger, Skel, Sparkline, SplitPane, Stagger, SystemStyle, TIP, TOOLTIP_STYLE, Td, Th, TipLayer, Toaster, WARM, WarmGrid, WarmLegend, WarmTable, WarmThead, WarmTooltip, WarmTr, WidgetContainer, accentRampTokens, activeDot, axisTick, barCursor, barValueLabel, categoryXAxis, categoryYAxis, chartTip, crosshairCursor, hexToOklch, makeAccentRamp, numberYAxis, oklchToHex, pressable, pressableSoft, referenceTarget, resetWarmCache, segItemClass, segTrackClass, seriesColor, timeXAxis, toast, tone };
+export { ACCENT, AXIS_TICK, AutoGrid, BAR_RADIUS, BAR_RADIUS_H, Badge, BarGradient, Btn, CHART_HEIGHT, CHART_MARGIN, CHART_MARGIN_COMPACT, CHART_SERIES, Card, ChartCard, ChartDataTable, ChartEmpty, ChartGradient, ChartSkel, ChartTooltip, Checkbox, Copy, CountUp, DataGridWrapper, Def, Delta, DetailDrawer, EmptyState, ExpandableRow, Field, GRID, GridRow, Hint, Input, KpiStrip, KpiTile, KpiVariantContext, Label, MockTag, Modal, PageStack, PageTabList, PageTabTrigger, Pill, RAMP_STOPS, REDUCED, Radio, RankedListCard, SPACE, SectionLabel, SegContent, SegList, SegTabs, SegTrigger, Select, Skel, Sparkline, SplitPane, Stagger, Switch, SystemStyle, TIP, TOOLTIP_STYLE, Td, Textarea, Th, TipLayer, Toaster, WARM, WarmGrid, WarmLegend, WarmTable, WarmThead, WarmTooltip, WarmTr, WidgetContainer, accentRampTokens, activeDot, axisTick, barCursor, barValueLabel, categoryXAxis, categoryYAxis, chartTip, crosshairCursor, hexToOklch, makeAccentRamp, numberYAxis, oklchToHex, pressable, pressableSoft, referenceTarget, resetWarmCache, segItemClass, segTrackClass, seriesColor, timeXAxis, toast, tone };
 //# sourceMappingURL=index.js.map
 //# sourceMappingURL=index.js.map

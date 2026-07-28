@@ -100,6 +100,67 @@ pulse — no gradient shimmer.
 
 ---
 
+## Forms
+
+Every labelled control comes from the form layer. Before it existed, form-heavy
+surfaces had nowhere in the system to land and fell back to raw shadcn — which is
+most of what "the design system isn't adopted here" actually meant.
+
+**`<Field>` owns the wiring.** It generates the id, points `htmlFor` at it, and
+hands the control `aria-describedby` and `aria-invalid` through a render prop:
+
+```tsx
+<Field label="Reorder quantity" required error={err} hint="Units, not cases.">
+  {(p) => <Input {...p} value={qty} onChange={…} />}
+</Field>
+```
+
+The control cannot be rendered without receiving those props, which is the point.
+The alternative — every call site remembering its own `id`/`htmlFor` pair and
+adding `aria-describedby` only when a hint exists — is correct in the first ten
+forms and wrong in the next fifty.
+
+**The label sits at the body tier (`sub`), not `faint`.** A field label is the
+control's name, not a caption; a form whose labels are all faint reads as a form
+that is disabled. The hint below it is genuinely secondary, so that one is faint.
+
+**Invalid state is a border and a message, never a border alone.** A red outline
+with no text says something is wrong without saying what. The visual is driven off
+`aria-invalid`, not a `variant` prop, so a control cannot look wrong while telling
+a screen reader it is fine.
+
+**Checkbox vs switch is a semantic choice, not a stylistic one.** A switch applies
+immediately; a checkbox is staged until a Save. Use `<Switch>` for a filter or a
+preference that takes effect on the spot, `<Checkbox>` for anything the
+surrounding form commits later. Backwards is how someone loses work to a form they
+believed they had already applied.
+
+All three choice controls take their ON color from `--warm-primary`, not the
+accent ramp — the ramp means *you are touching this* (rule 1), which is not what a
+checked box means. State that borrowed the focus color would make every settled
+form look active.
+
+**`<Select>` is the native `<select>`.** A dashboard select is nearly always a
+short list of plain strings, and for that the platform control wins outright:
+keyboard support, type-ahead and the native picker on touch, none of it
+maintained by us. It also cannot be clipped by an `overflow: auto` table wrapper —
+the same failure `TipLayer` exists to avoid, which quietly breaks popover-based
+selects inside data grids. A picker that genuinely needs rich rows is a different
+control and stays in the app until enough surfaces want the same one.
+
+**`<Modal>` interrupts; `<DetailDrawer>` does not.** Reach for the drawer first.
+Most of what gets built as a modal on a dashboard is really a detail view, and a
+detail view that blocks the page costs the user the context they opened it from.
+A modal is one of the few things here that genuinely floats, so it carries the
+shadow rule 2 denies a card — and keeps the strong edge as well.
+
+One implementation note that will not be obvious later: the control shell is
+`.fb-inp`, a **new** class rather than sizing added to the older `.fb-input`.
+`SystemStyle` renders its `<style>` in the body, so a `padding` declaration on
+`.fb-input` would beat the Tailwind padding utility that existing call sites
+already pass — equal specificity, later in document order. A separate class leaves
+them untouched. See "Traps that have already cost us" at the end.
+
 ## Motion
 
 Transitions are 0.1–0.2s. Every animation in the system is listed in the reduced-
@@ -164,3 +225,34 @@ dashboard moves — which is exactly what had happened to Untoxicated.
 12px card rhythm (`section`, `gutter`); 24px content-card padding; 16px KPI-tile
 padding. `SPACE` in `warm/spacing.ts` mirrors the Tailwind tokens for the props
 that take JS numbers.
+
+## Traps that have already cost us
+
+**tailwind-merge only drops a conflicting class when the MODIFIER matches too.**
+A plain `bg-transparent` does *not* cancel a shadcn base's
+`data-[state=active]:bg-background`. Both survive `cn()`, Tailwind emits variants
+after base utilities, and the base wins. Any wrapper suppressing a base's
+`data-[state=*]` / `hover:` / `focus:` treatment has to beat it **on its own
+modifier**. This is what shipped a white pill behind every active page tab in
+v0.3.0, to every client. Same family for `py-1.5` vs `pt-*`/`pb-*`.
+
+The fast check is not reading the DOM — it is running `twMerge(base, override)`
+in a scratch `.mjs` and looking at what survived.
+
+**`SystemStyle` renders in the body, so its `.fb-*` rules beat equal-specificity
+Tailwind utilities on document order alone.** That masks these leaks wherever
+SystemStyle happens to declare the same property (it is what saved `.fb-seg-btn`)
+and exposes them wherever it does not (`.fb-tab` declares no background). Never
+rely on it — and never add a property to an existing `.fb-*` class that call sites
+are already overriding with utilities.
+
+**A renamed prop compiles and renders.** React silently drops unknown props, so an
+aliased component falls back to its default variant with no error anywhere. This
+cost ~17 buttons their hierarchy before someone noticed by eye.
+
+**`export { X as Y } from "pkg"` creates an export binding but no local binding** —
+anything still living in that file cannot reference `Y`. Import, then export.
+
+**Never snapshot a token at module scope.** `const x = { fill: WARM.sub }` resolves
+once, before the stylesheet applies, and pins every consumer to the package
+fallback. Use a getter.
