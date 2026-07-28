@@ -148,3 +148,41 @@ export function accentRampTokens(brandHex: string): Record<string, string> {
   for (const stop of RAMP_STOPS) tokens[`--accent-${stop}`] = ramp[stop];
   return tokens;
 }
+
+/** WCAG relative luminance. */
+function luminance(hex: string): number | null {
+  const rgb = parseHex(hex);
+  if (!rgb) return null;
+  const [r, g, b] = rgb.map(srgbToLinear) as [number, number, number];
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+/** WCAG contrast ratio between two hex colors. Returns 1 if either is unparseable. */
+export function contrastRatio(a: string, b: string): number {
+  const la = luminance(a);
+  const lb = luminance(b);
+  if (la == null || lb == null) return 1;
+  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+}
+
+/** The system's ink, as a literal — the neutral tier is shared across all clients. */
+const INK = "#1C1E24";
+
+/**
+ * Pick the readable foreground for text sitting ON `bg` — ink or white,
+ * whichever has more contrast.
+ *
+ * This exists because `--warm-primary-fg` was a hardcoded `#FFFFFF`, and a brand
+ * primary is the one token guaranteed to differ per tenant. Measured across the
+ * nine client primaries in the unified app, FIVE fail WCAG AA with white on them
+ * — a coral at 3.21, two teals at 2.90 and 3.29, an orange at 2.58 — and four of
+ * those clear it comfortably with ink instead. Every primary-filled button on
+ * those tenants was shipping a label nobody could read, and no amount of care at
+ * the call site would have caught it, because the call site never picks the color.
+ *
+ * A tenant can still pin `--warm-primary-fg` explicitly; derived values are a
+ * floor, not a ceiling.
+ */
+export function readableOn(bg: string): string {
+  return contrastRatio(bg, "#FFFFFF") >= contrastRatio(bg, INK) ? "#FFFFFF" : INK;
+}

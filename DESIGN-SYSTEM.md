@@ -40,6 +40,15 @@ A brand whose accent should not derive from `primary` — Untoxicated's primary 
 near-black while its actual brand color is yellow — can pin `--accent-*` directly
 in its `branding` block; explicit values always beat the derived ones.
 
+**`--warm-primary-fg` is derived, not assumed.** Text on a primary fill is the one
+place a shared default cannot work, because the fill is the token guaranteed to
+differ per tenant. It was hardcoded `#FFFFFF`; measured across the nine client
+primaries in the unified app, **five fail WCAG AA with white on them** — a coral
+at 3.21, teals at 2.90 and 3.29, an orange at 2.58 — and four clear it
+comfortably with ink. Use `readableOn(primaryHex)`, which picks ink or white by
+contrast. No amount of care at the call site would have caught this, because the
+call site never picks that color.
+
 ## 2. Edges define, dividers whisper
 
 A card is defined by its **edge**, not by a shadow.

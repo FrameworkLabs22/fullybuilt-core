@@ -1832,7 +1832,23 @@ function accentRampTokens(brandHex) {
   for (const stop of RAMP_STOPS) tokens[`--accent-${stop}`] = ramp[stop];
   return tokens;
 }
+function luminance(hex) {
+  const rgb = parseHex(hex);
+  if (!rgb) return null;
+  const [r, g, b] = rgb.map(srgbToLinear);
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+function contrastRatio(a, b) {
+  const la = luminance(a);
+  const lb = luminance(b);
+  if (la == null || lb == null) return 1;
+  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+}
+var INK = "#1C1E24";
+function readableOn(bg) {
+  return contrastRatio(bg, "#FFFFFF") >= contrastRatio(bg, INK) ? "#FFFFFF" : INK;
+}
 
-export { ACCENT, AXIS_TICK, AutoGrid, BAR_RADIUS, BAR_RADIUS_H, Badge, BarGradient, Btn, CHART_HEIGHT, CHART_MARGIN, CHART_MARGIN_COMPACT, CHART_SERIES, Card, ChartCard, ChartDataTable, ChartEmpty, ChartGradient, ChartSkel, ChartTooltip, Checkbox, Copy, CountUp, DataGridWrapper, Def, Delta, DetailDrawer, EmptyState, ExpandableRow, FIELD_BOX, Field, GRID, GridRow, Hint, Input, KpiStrip, KpiTile, KpiVariantContext, Label, MockTag, Modal, PageStack, PageTabList, PageTabTrigger, Pill, RAMP_STOPS, REDUCED, Radio, RankedListCard, SPACE, SectionLabel, SegContent, SegList, SegTabs, SegTrigger, Select, Skel, Sparkline, SplitPane, Stagger, Switch, SystemStyle, TIP, TOOLTIP_STYLE, Td, Textarea, Th, TipLayer, Toaster, WARM, WarmGrid, WarmLegend, WarmTable, WarmThead, WarmTooltip, WarmTr, WidgetContainer, accentRampTokens, activeDot, axisTick, barCursor, barValueLabel, categoryXAxis, categoryYAxis, chartTip, crosshairCursor, hexToOklch, makeAccentRamp, numberYAxis, oklchToHex, pressable, pressableSoft, referenceTarget, resetWarmCache, segItemClass, segTrackClass, seriesColor, timeXAxis, toast, tone };
+export { ACCENT, AXIS_TICK, AutoGrid, BAR_RADIUS, BAR_RADIUS_H, Badge, BarGradient, Btn, CHART_HEIGHT, CHART_MARGIN, CHART_MARGIN_COMPACT, CHART_SERIES, Card, ChartCard, ChartDataTable, ChartEmpty, ChartGradient, ChartSkel, ChartTooltip, Checkbox, Copy, CountUp, DataGridWrapper, Def, Delta, DetailDrawer, EmptyState, ExpandableRow, FIELD_BOX, Field, GRID, GridRow, Hint, Input, KpiStrip, KpiTile, KpiVariantContext, Label, MockTag, Modal, PageStack, PageTabList, PageTabTrigger, Pill, RAMP_STOPS, REDUCED, Radio, RankedListCard, SPACE, SectionLabel, SegContent, SegList, SegTabs, SegTrigger, Select, Skel, Sparkline, SplitPane, Stagger, Switch, SystemStyle, TIP, TOOLTIP_STYLE, Td, Textarea, Th, TipLayer, Toaster, WARM, WarmGrid, WarmLegend, WarmTable, WarmThead, WarmTooltip, WarmTr, WidgetContainer, accentRampTokens, activeDot, axisTick, barCursor, barValueLabel, categoryXAxis, categoryYAxis, chartTip, contrastRatio, crosshairCursor, hexToOklch, makeAccentRamp, numberYAxis, oklchToHex, pressable, pressableSoft, readableOn, referenceTarget, resetWarmCache, segItemClass, segTrackClass, seriesColor, timeXAxis, toast, tone };
 //# sourceMappingURL=index.js.map
 //# sourceMappingURL=index.js.map

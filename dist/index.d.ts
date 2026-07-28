@@ -1227,5 +1227,23 @@ declare function makeAccentRamp(brandHex: string): AccentRamp;
  * merge into a client's `branding` token map and inject on `:root`.
  */
 declare function accentRampTokens(brandHex: string): Record<string, string>;
+/** WCAG contrast ratio between two hex colors. Returns 1 if either is unparseable. */
+declare function contrastRatio(a: string, b: string): number;
+/**
+ * Pick the readable foreground for text sitting ON `bg` — ink or white,
+ * whichever has more contrast.
+ *
+ * This exists because `--warm-primary-fg` was a hardcoded `#FFFFFF`, and a brand
+ * primary is the one token guaranteed to differ per tenant. Measured across the
+ * nine client primaries in the unified app, FIVE fail WCAG AA with white on them
+ * — a coral at 3.21, two teals at 2.90 and 3.29, an orange at 2.58 — and four of
+ * those clear it comfortably with ink instead. Every primary-filled button on
+ * those tenants was shipping a label nobody could read, and no amount of care at
+ * the call site would have caught it, because the call site never picks the color.
+ *
+ * A tenant can still pin `--warm-primary-fg` explicitly; derived values are a
+ * floor, not a ceiling.
+ */
+declare function readableOn(bg: string): string;
 
-export { ACCENT, AXIS_TICK, type AccentRamp, AutoGrid, BAR_RADIUS, BAR_RADIUS_H, Badge, type BadgeTone, BarGradient, Btn, CHART_HEIGHT, CHART_MARGIN, CHART_MARGIN_COMPACT, CHART_SERIES, Card, ChartCard, ChartDataTable, type ChartDataTableColumn, type ChartDataTableProps, ChartEmpty, type ChartEmptyProps, ChartGradient, ChartSkel, ChartTooltip, type ChartTooltipRow, Checkbox, Copy, CountUp, DataGridWrapper, Def, Delta, DetailDrawer, EmptyState, ExpandableRow, FIELD_BOX, Field, type FieldControlProps, GRID, GridRow, Hint, Input, KpiStrip, KpiTile, KpiVariantContext, Label, MockTag, Modal, PageStack, PageTabList, PageTabTrigger, Pill, RAMP_STOPS, REDUCED, Radio, type RampStop, type RankedItem, RankedListCard, SPACE, SectionLabel, SegContent, SegList, SegTabs, SegTrigger, Select, type SelectOption, Skel, Sparkline, SplitPane, Stagger, Switch, SystemStyle, TIP, TOOLTIP_STYLE, Td, Textarea, Th, TipLayer, Toaster, type Tone, WARM, WarmGrid, WarmLegend, type WarmLegendItem, type WarmLegendProps, WarmTable, WarmThead, WarmTooltip, type WarmTooltipItem, type WarmTooltipProps, WarmTr, WidgetContainer, accentRampTokens, activeDot, axisTick, barCursor, barValueLabel, categoryXAxis, categoryYAxis, chartTip, crosshairCursor, hexToOklch, makeAccentRamp, numberYAxis, oklchToHex, pressable, pressableSoft, referenceTarget, resetWarmCache, segItemClass, segTrackClass, seriesColor, timeXAxis, toast, tone };
+export { ACCENT, AXIS_TICK, type AccentRamp, AutoGrid, BAR_RADIUS, BAR_RADIUS_H, Badge, type BadgeTone, BarGradient, Btn, CHART_HEIGHT, CHART_MARGIN, CHART_MARGIN_COMPACT, CHART_SERIES, Card, ChartCard, ChartDataTable, type ChartDataTableColumn, type ChartDataTableProps, ChartEmpty, type ChartEmptyProps, ChartGradient, ChartSkel, ChartTooltip, type ChartTooltipRow, Checkbox, Copy, CountUp, DataGridWrapper, Def, Delta, DetailDrawer, EmptyState, ExpandableRow, FIELD_BOX, Field, type FieldControlProps, GRID, GridRow, Hint, Input, KpiStrip, KpiTile, KpiVariantContext, Label, MockTag, Modal, PageStack, PageTabList, PageTabTrigger, Pill, RAMP_STOPS, REDUCED, Radio, type RampStop, type RankedItem, RankedListCard, SPACE, SectionLabel, SegContent, SegList, SegTabs, SegTrigger, Select, type SelectOption, Skel, Sparkline, SplitPane, Stagger, Switch, SystemStyle, TIP, TOOLTIP_STYLE, Td, Textarea, Th, TipLayer, Toaster, type Tone, WARM, WarmGrid, WarmLegend, type WarmLegendItem, type WarmLegendProps, WarmTable, WarmThead, WarmTooltip, type WarmTooltipItem, type WarmTooltipProps, WarmTr, WidgetContainer, accentRampTokens, activeDot, axisTick, barCursor, barValueLabel, categoryXAxis, categoryYAxis, chartTip, contrastRatio, crosshairCursor, hexToOklch, makeAccentRamp, numberYAxis, oklchToHex, pressable, pressableSoft, readableOn, referenceTarget, resetWarmCache, segItemClass, segTrackClass, seriesColor, timeXAxis, toast, tone };

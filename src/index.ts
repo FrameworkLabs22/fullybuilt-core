@@ -20,5 +20,5 @@ export type { Tone } from "./system/tone";
 // ── per-client accent ramp ──
 // Generates the 10-step interaction ramp in a client's brand hue. Feed the output
 // of accentRampTokens() into the app's brand-token injection alongside --warm-*.
-export { makeAccentRamp, accentRampTokens, hexToOklch, oklchToHex, RAMP_STOPS } from "./lib/ramp";
+export { makeAccentRamp, accentRampTokens, hexToOklch, oklchToHex, readableOn, contrastRatio, RAMP_STOPS } from "./lib/ramp";
 export type { AccentRamp, RampStop } from "./lib/ramp";
