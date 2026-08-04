@@ -1,6 +1,6 @@
 {
   "name": "@fullybuilt/core",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "description": "Shared 'warm' design system for Fully Built client dashboards.",
   "type": "module",
   "files": [
@@ -44,5 +44,6 @@
     "react-router-dom": "^6.26.2",
     "tsup": "^8.3.0",
     "typescript": "^5.5.3"
-  }
+  },
+  "sideEffects": false
 }
