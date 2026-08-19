@@ -219,7 +219,15 @@ that need a literal — Recharts passes colors as SVG presentation attributes, w
 
 Two consequences worth remembering:
 
-- **Never snapshot a token at module scope.** `const x = { fill: WARM.sub }` at
+- **An opacity modifier on a `--warm-*` colour emits NOTHING.** The palette is
+declared as bare `var(--warm-x)`, not `rgb(var(--warm-x) / <alpha-value>)`, so
+Tailwind cannot apply alpha and drops the rule entirely — the element gets a class
+that matches no selector. `WarmTr` shipped `hover:bg-warm-chip/40` in v0.1.0 and
+table rows had no hover on any dashboard until it was caught in v0.4.5. Use a solid
+token, or `color-mix()` in an arbitrary value. Grep the built CSS for the escaped
+selector (`hover\:bg-warm-chip\/40`) before trusting any `/NN` on these colours.
+
+**Never snapshot a token at module scope.** `const x = { fill: WARM.sub }` at
   the top of a file resolves once, before the stylesheet is applied, and pins that
   value forever. Use a getter (see `axisTick` in `theme.ts`).
 - **Call `resetWarmCache()` after injecting a new client's tokens**, or the first
