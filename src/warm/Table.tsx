@@ -61,7 +61,15 @@ export function WarmTable({
   return (
     <VariantContext.Provider value={variant}>
       {variant === "framed" ? (
-        <div className={cn("rounded-card border border-warm-border bg-warm-card", wrapperClassName)}>
+        <div
+          // border-STRONG, not border. The tokens are explicit about this:
+          // --warm-border-strong is "card EDGE / table rules", --warm-border is
+          // "internal divider (inside a card)". The frame IS a card edge, so it
+          // has to match a real <Card> sitting beside it — Card.tsx uses strong.
+          // The row and header rules below stay on the lighter token: inside the
+          // frame they are internal dividers, which is what it is for.
+          className={cn("rounded-card border border-warm-border-strong bg-warm-card", wrapperClassName)}
+        >
           {table}
         </div>
       ) : (

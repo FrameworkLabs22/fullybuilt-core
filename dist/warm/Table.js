@@ -15,7 +15,13 @@ function WarmTable({
   ...props
 }) {
   const table = /* @__PURE__ */ jsx("div", { className: "overflow-x-auto", children: /* @__PURE__ */ jsx("table", { className: cn("w-full border-collapse text-body-sm", className), ...props, children }) });
-  return /* @__PURE__ */ jsx(VariantContext.Provider, { value: variant, children: variant === "framed" ? /* @__PURE__ */ jsx("div", { className: cn("rounded-card border border-warm-border bg-warm-card", wrapperClassName), children: table }) : table });
+  return /* @__PURE__ */ jsx(VariantContext.Provider, { value: variant, children: variant === "framed" ? /* @__PURE__ */ jsx(
+    "div",
+    {
+      className: cn("rounded-card border border-warm-border-strong bg-warm-card", wrapperClassName),
+      children: table
+    }
+  ) : table });
 }
 function WarmThead({ className, children, ...props }) {
   const variant = React.useContext(VariantContext);
