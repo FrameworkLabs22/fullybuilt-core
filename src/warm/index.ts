@@ -46,6 +46,7 @@ export type {
   ChartDataTableColumn,
 } from "./charts";
 export { WarmTable, WarmThead, Th, WarmTr, Td } from "./Table";
+export type { WarmTableVariant } from "./Table";
 export { EmptyState } from "./EmptyState";
 export { SegTabs, SegList, SegTrigger, SegContent, segTrackClass, segItemClass } from "./Seg";
 export { PageTabList, PageTabTrigger } from "./PageTabs";

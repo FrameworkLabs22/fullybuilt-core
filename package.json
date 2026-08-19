@@ -1,6 +1,6 @@
 {
   "name": "@fullybuilt/core",
-  "version": "0.4.3",
+  "version": "0.4.4",
   "description": "Shared 'warm' design system for Fully Built client dashboards.",
   "type": "module",
   "files": [

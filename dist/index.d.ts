@@ -20,7 +20,7 @@ export { ChartDataTable, ChartDataTableColumn, ChartDataTableProps } from './war
 export { categoryXAxis, categoryYAxis, numberYAxis, timeXAxis } from './warm/charts/axes.js';
 export { barValueLabel, referenceTarget } from './warm/charts/references.js';
 export { BAR_RADIUS, BAR_RADIUS_H, CHART_HEIGHT, CHART_MARGIN, CHART_MARGIN_COMPACT, activeDot, barCursor, crosshairCursor } from './warm/charts/constants.js';
-export { Td, Th, WarmTable, WarmThead, WarmTr } from './warm/Table.js';
+export { Td, Th, WarmTable, WarmTableVariant, WarmThead, WarmTr } from './warm/Table.js';
 export { EmptyState } from './warm/EmptyState.js';
 export { SegContent, SegList, SegTabs, SegTrigger, segItemClass, segTrackClass } from './warm/Seg.js';
 export { PageTabList, PageTabTrigger } from './warm/PageTabs.js';
