@@ -55,7 +55,7 @@ function WarmTr({ className, children, ...props }) {
     {
       className: cn(
         "transition-colors",
-        variant === "framed" ? "border-b border-dashed border-warm-border last:border-0 hover:bg-warm-bg/60" : "border-t border-warm-border hover:bg-warm-chip/40",
+        variant === "framed" ? "border-b border-dashed border-warm-border last:border-0 hover:bg-warm-bg" : "border-t border-warm-border hover:bg-warm-chip/40",
         className
       ),
       ...props,

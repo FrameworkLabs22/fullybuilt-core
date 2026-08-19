@@ -118,7 +118,14 @@ export function WarmTr({ className, children, ...props }: React.HTMLAttributes<H
       className={cn(
         "transition-colors",
         variant === "framed"
-          ? "border-b border-dashed border-warm-border last:border-0 hover:bg-warm-bg/60"
+          // NOT hover:bg-warm-bg/60. The --warm-* colours are declared as bare
+          // `var(--warm-x)` rather than `rgb(var(--warm-x) / <alpha-value>)`, so
+          // Tailwind emits NO rule at all for an opacity modifier on them — the
+          // element gets a class that matches nothing. `hover:bg-warm-chip/40` on
+          // the plain variant below has been dead since v0.1.0 for exactly this
+          // reason. --warm-bg over a --warm-card table is already a hairline grey,
+          // so full strength is the effect that was wanted anyway.
+          ? "border-b border-dashed border-warm-border last:border-0 hover:bg-warm-bg"
           : "border-t border-warm-border hover:bg-warm-chip/40",
         className,
       )}
