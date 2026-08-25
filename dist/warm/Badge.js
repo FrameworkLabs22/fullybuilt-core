@@ -1,6 +1,6 @@
 import { jsx, jsxs } from "react/jsx-runtime";
 import { cn } from "../lib/utils";
-import { tone as resolveTone } from "../system/tone";
+import { toneVar as resolveTone } from "../system/tone";
 const ALIASES = {
   neutral: "muted",
   ok: "pos",
@@ -20,7 +20,7 @@ function Badge({ tone = "muted", className, children, style, ...props }) {
         "transition-colors duration-150 ease-[cubic-bezier(0.25,1,0.5,1)]",
         className
       ),
-      style: { color: t.fg, background: t.bg, border: `1px solid ${t.fg}33`, ...style },
+      style: { color: t.fg, background: t.bg, border: `1px solid ${t.border}`, ...style },
       ...props,
       children: [
         /* @__PURE__ */ jsx("span", { className: "h-1.5 w-1.5 shrink-0 rounded-full", style: { background: t.fg } }),

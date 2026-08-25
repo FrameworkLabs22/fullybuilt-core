@@ -1,6 +1,6 @@
 import * as React from "react";
 import { cn } from "../lib/utils";
-import { tone as resolveTone, type Tone } from "../system/tone";
+import { toneVar as resolveTone, type Tone } from "../system/tone";
 
 /**
  * State badge — a leading dot, then the label.
@@ -38,7 +38,7 @@ export function Badge({ tone = "muted", className, children, style, ...props }: 
         "transition-colors duration-150 ease-[cubic-bezier(0.25,1,0.5,1)]",
         className,
       )}
-      style={{ color: t.fg, background: t.bg, border: `1px solid ${t.fg}33`, ...style }}
+      style={{ color: t.fg, background: t.bg, border: `1px solid ${t.border}`, ...style }}
       {...props}
     >
       <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: t.fg }} />

@@ -14,7 +14,24 @@ function tone(t) {
       return { fg: WARM.sub, bg: WARM.chip };
   }
 }
+const TONE_VARS = {
+  pos: { fg: "--warm-pos", bg: "--warm-pos-soft" },
+  warn: { fg: "--warm-warn", bg: "--warm-warn-soft" },
+  neg: { fg: "--warm-danger", bg: "--warm-danger-soft" },
+  excess: { fg: "--warm-excess", bg: "--warm-excess-soft" },
+  muted: { fg: "--warm-sub", bg: "--warm-chip" }
+};
+function toneVar(t) {
+  const v = TONE_VARS[t] ?? TONE_VARS.muted;
+  const lit = tone(t);
+  return {
+    fg: `var(${v.fg}, ${lit.fg})`,
+    bg: `var(${v.bg}, ${lit.bg})`,
+    border: `color-mix(in srgb, var(${v.fg}, ${lit.fg}) 20%, transparent)`
+  };
+}
 export {
-  tone
+  tone,
+  toneVar
 };
 //# sourceMappingURL=tone.js.map

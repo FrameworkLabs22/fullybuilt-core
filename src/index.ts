@@ -14,7 +14,7 @@ export { ChartTooltip, TIP, REDUCED } from "./system/ChartTooltip";
 export type { ChartTooltipRow } from "./system/ChartTooltip";
 export { Copy } from "./system/Copy";
 export { MockTag } from "./system/MockTag";
-export { tone } from "./system/tone";
+export { tone, toneVar } from "./system/tone";
 export type { Tone } from "./system/tone";
 
 // ── per-client accent ramp ──

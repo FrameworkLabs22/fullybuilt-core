@@ -6,7 +6,7 @@ import { Skel, ChartSkel } from "./system/Skel";
 import { ChartTooltip, TIP, REDUCED } from "./system/ChartTooltip";
 import { Copy } from "./system/Copy";
 import { MockTag } from "./system/MockTag";
-import { tone } from "./system/tone";
+import { tone, toneVar } from "./system/tone";
 import { makeAccentRamp, accentRampTokens, hexToOklch, oklchToHex, readableOn, contrastRatio, RAMP_STOPS } from "./lib/ramp";
 export {
   ChartSkel,
@@ -28,6 +28,7 @@ export {
   oklchToHex,
   readableOn,
   toast,
-  tone
+  tone,
+  toneVar
 };
 //# sourceMappingURL=index.js.map

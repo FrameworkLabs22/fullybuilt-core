@@ -45,7 +45,7 @@ export { ChartSkel, Skel } from './system/Skel.js';
 export { ChartTooltip, ChartTooltipRow, REDUCED, TIP } from './system/ChartTooltip.js';
 export { Copy } from './system/Copy.js';
 export { MockTag } from './system/MockTag.js';
-export { Tone, tone } from './system/tone.js';
+export { Tone, tone, toneVar } from './system/tone.js';
 export { AccentRamp, RAMP_STOPS, RampStop, accentRampTokens, contrastRatio, hexToOklch, makeAccentRamp, oklchToHex, readableOn } from './lib/ramp.js';
 import 'react';
 import 'recharts';

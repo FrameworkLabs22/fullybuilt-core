@@ -12,5 +12,10 @@ declare function tone(t: Tone): {
     fg: string;
     bg: string;
 };
+declare function toneVar(t: Tone): {
+    fg: string;
+    bg: string;
+    border: string;
+};
 
-export { type Tone, tone };
+export { type Tone, tone, toneVar };
