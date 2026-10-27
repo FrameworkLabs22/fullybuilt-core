@@ -48,8 +48,10 @@ export function WarmTooltip({
 
   return (
     <div
-      className="rounded-[10px] border bg-white px-2.5 py-2 shadow-sm"
-      style={{ borderColor: WARM.border, fontSize: 12, minWidth: 120 }}
+      className="rounded-[10px] border px-2.5 py-2 shadow-sm"
+      // The card var, not a literal white: in dark mode the text tokens go light, so a
+      // hardcoded white left light-on-white, unreadable tooltips (Team Hub, 2026-10-27).
+      style={{ background: "var(--warm-card, #fff)", borderColor: WARM.border, fontSize: 12, minWidth: 120 }}
     >
       {!hideLabel && label != null && label !== "" && (
         <div className="mb-1.5 font-semibold text-warm-ink" style={{ fontSize: 11.5 }}>

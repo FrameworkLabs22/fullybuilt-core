@@ -142,7 +142,8 @@ const chartTip = {
     get border() {
       return `1px solid ${WARM.border}`;
     },
-    background: "#fff"
+    // Card var, not "#fff": dark mode flips the text tokens light (see WarmTooltip).
+    background: "var(--warm-card, #fff)"
   },
   cursor: {
     get fill() {

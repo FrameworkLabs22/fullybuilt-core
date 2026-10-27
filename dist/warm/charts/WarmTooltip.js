@@ -13,8 +13,8 @@ function WarmTooltip({
   return /* @__PURE__ */ jsxs(
     "div",
     {
-      className: "rounded-[10px] border bg-white px-2.5 py-2 shadow-sm",
-      style: { borderColor: WARM.border, fontSize: 12, minWidth: 120 },
+      className: "rounded-[10px] border px-2.5 py-2 shadow-sm",
+      style: { background: "var(--warm-card, #fff)", borderColor: WARM.border, fontSize: 12, minWidth: 120 },
       children: [
         !hideLabel && label != null && label !== "" && /* @__PURE__ */ jsx("div", { className: "mb-1.5 font-semibold text-warm-ink", style: { fontSize: 11.5 }, children: labelFormatter ? labelFormatter(label) : label }),
         /* @__PURE__ */ jsx("div", { className: "flex flex-col gap-1", children: payload.map((item, i) => /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2", children: [
