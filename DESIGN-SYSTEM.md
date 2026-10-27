@@ -227,6 +227,13 @@ table rows had no hover on any dashboard until it was caught in v0.4.5. Use a so
 token, or `color-mix()` in an arbitrary value. Grep the built CSS for the escaped
 selector (`hover\:bg-warm-chip\/40`) before trusting any `/NN` on these colours.
 
+- **`cn()` must know every named custom size, or it deletes it.** tailwind-merge only knows
+Tailwind's built-in scales, so it read `text-micro` as a text colour and dropped it next to a
+real one: `WarmThead`'s `cn("text-micro text-warm-faint")` rendered every table header at body
+size from v0.1.0 until v0.4.8. The custom radii and font sizes are registered in
+`src/lib/utils.ts`; add any new named token there too, and give the apps' own `cn()` the same
+list.
+
 **Never snapshot a token at module scope.** `const x = { fill: WARM.sub }` at
   the top of a file resolves once, before the stylesheet is applied, and pins that
   value forever. Use a getter (see `axisTick` in `theme.ts`).
